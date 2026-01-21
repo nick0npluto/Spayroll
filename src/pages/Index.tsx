@@ -155,7 +155,7 @@ const Index = () => {
               )}
               <div>
                 <h1 className="text-lg font-bold text-foreground">
-                  Valet Payroll
+                  Spayroll+
                 </h1>
                 {selectedLocation && (
                   <p className="text-xs text-muted-foreground">
