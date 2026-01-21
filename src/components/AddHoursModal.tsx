@@ -79,11 +79,11 @@ export function AddHoursModal({ onUseTotal, onClose, title = 'Add Hours' }: AddH
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 z-50">
+      <div className="modal-backdrop absolute inset-0" onClick={onClose} />
+      <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="modal-content animate-scale-in max-h-[80vh] overflow-hidden flex flex-col"
-          onClick={(e) => e.stopPropagation()}
+          className="modal-content animate-scale-in max-h-[80vh] overflow-hidden flex flex-col pointer-events-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
