@@ -8,6 +8,7 @@ export interface ExportData {
   employees: Employee[];
   expenses: number;
   weekLabel: string;
+  roundedPayment: number | null;
 }
 
 function sanitizeFilename(name: string): string {
@@ -21,7 +22,7 @@ export function generateFilename(location: LocationProfile, weekLabel: string, e
 }
 
 export function exportToPDF(data: ExportData): void {
-  const { location, employees, expenses, weekLabel } = data;
+  const { location, employees, expenses, weekLabel, roundedPayment } = data;
   
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -116,7 +117,7 @@ export function exportToPDF(data: ExportData): void {
   const totalPayroll = employees.reduce((sum, emp) => {
     return sum + calculateEmployeePay(emp, location).totalPay;
   }, 0);
-  const netTotal = totalPayroll - expenses;
+  const netTotal = totalPayroll + expenses;
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
@@ -130,6 +131,15 @@ export function exportToPDF(data: ExportData): void {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text(`Net Total: ${formatCurrency(netTotal)}`, 14, finalY + 25);
+  
+  // Actual Payment (rounded amount)
+  if (roundedPayment !== null) {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 102, 0); // Orange color
+    doc.text(`Actual Payment: ${formatCurrency(roundedPayment)}`, 14, finalY + 35);
+    doc.setTextColor(0);
+  }
   
   // Footer
   doc.setFontSize(8);
@@ -148,12 +158,12 @@ export function exportToPDF(data: ExportData): void {
 }
 
 export function exportToCSV(data: ExportData): void {
-  const { location, employees, expenses, weekLabel } = data;
+  const { location, employees, expenses, weekLabel, roundedPayment } = data;
   
   const totalPayroll = employees.reduce((sum, emp) => {
     return sum + calculateEmployeePay(emp, location).totalPay;
   }, 0);
-  const netTotal = totalPayroll - expenses;
+  const netTotal = totalPayroll + expenses;
   
   // CSV headers
   const headers = [
@@ -202,6 +212,9 @@ export function exportToCSV(data: ExportData): void {
   rows.push(['Total Payroll', totalPayroll.toFixed(2)]);
   rows.push(['Expenses', expenses.toFixed(2)]);
   rows.push(['Net Total', netTotal.toFixed(2)]);
+  if (roundedPayment !== null) {
+    rows.push(['Actual Payment', roundedPayment.toFixed(2)]);
+  }
   
   // Convert to CSV string
   const csvContent = [
@@ -233,7 +246,7 @@ export function exportToCSV(data: ExportData): void {
 }
 
 export function exportToJSON(data: ExportData): string {
-  const { location, employees, expenses, weekLabel } = data;
+  const { location, employees, expenses, weekLabel, roundedPayment } = data;
   
   const totalPayroll = employees.reduce((sum, emp) => {
     return sum + calculateEmployeePay(emp, location).totalPay;
@@ -260,9 +273,11 @@ export function exportToJSON(data: ExportData): string {
       saturdayRate: emp.saturdayRate,
     })),
     expenses,
+    roundedPayment,
     summary: {
       totalPayroll,
-      netTotal: totalPayroll - expenses,
+      netTotal: totalPayroll + expenses,
+      actualPayment: roundedPayment,
     },
   };
   

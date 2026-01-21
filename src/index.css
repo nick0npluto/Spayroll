@@ -157,7 +157,7 @@
 
   /* Employee card styling */
   .employee-card {
-    @apply bg-surface-elevated border border-border p-5 transition-all duration-200
+    @apply bg-muted border border-border p-5 transition-all duration-200
            hover:border-primary/30;
   }
 
