@@ -79,12 +79,12 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        xl: "1rem",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        lg: "0",
+        md: "0",
+        sm: "0",
+        xl: "0",
+        "2xl": "0",
+        "3xl": "0",
       },
       boxShadow: {
         'glow': '0 0 30px -10px hsl(var(--primary) / 0.3)',

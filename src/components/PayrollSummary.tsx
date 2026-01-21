@@ -17,7 +17,7 @@ export function PayrollSummary({
   onExpensesChange,
 }: PayrollSummaryProps) {
   const totalPayroll = calculateTotalPayroll(employees, location);
-  const netTotal = totalPayroll - expenses;
+  const netTotal = totalPayroll + expenses;
 
   return (
     <div className="summary-card">
