@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, MinusCircle, Calculator } from 'lucide-react';
+import { DollarSign, MinusCircle, Calculator, Banknote } from 'lucide-react';
 import { Employee, LocationProfile } from '@/types/payroll';
 import { calculateTotalPayroll, formatCurrency } from '@/utils/payrollCalculations';
 
@@ -8,6 +8,8 @@ interface PayrollSummaryProps {
   location: LocationProfile;
   expenses: number;
   onExpensesChange: (value: number) => void;
+  roundedPayment: number | null;
+  onRoundedPaymentChange: (value: number | null) => void;
 }
 
 export function PayrollSummary({
@@ -15,6 +17,8 @@ export function PayrollSummary({
   location,
   expenses,
   onExpensesChange,
+  roundedPayment,
+  onRoundedPaymentChange,
 }: PayrollSummaryProps) {
   const totalPayroll = calculateTotalPayroll(employees, location);
   const netTotal = totalPayroll + expenses;
@@ -22,7 +26,7 @@ export function PayrollSummary({
   return (
     <div className="summary-card">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+        <div className="w-12 h-12 bg-primary/20 flex items-center justify-center">
           <Calculator className="w-6 h-6 text-primary" />
         </div>
         <div>
@@ -68,11 +72,39 @@ export function PayrollSummary({
         </div>
 
         {/* Net Total */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between py-3 border-b border-primary/10">
           <span className="text-lg font-semibold text-foreground">Net Total</span>
           <span className={`text-2xl font-bold ${netTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
             {formatCurrency(netTotal)}
           </span>
+        </div>
+
+        {/* Rounded Payment (Actual Amount Paid) */}
+        <div className="flex items-center justify-between py-3 bg-primary/5 px-3 -mx-3">
+          <div className="flex items-center gap-3">
+            <Banknote className="w-5 h-5 text-primary" />
+            <div>
+              <span className="text-foreground font-medium">Actual Payment</span>
+              <p className="text-xs text-muted-foreground">Rounded amount paid</p>
+            </div>
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-medium">
+              $
+            </span>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={roundedPayment ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                onRoundedPaymentChange(val === '' ? null : parseFloat(val) || 0);
+              }}
+              placeholder={Math.ceil(netTotal).toString()}
+              className="numeric-input w-32 pl-7 text-right border-primary bg-background"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -201,10 +201,10 @@ export function EmployeeCard({
             <button
               onClick={() => onUpdate({ ...employee, basePayType: 'standard' })}
               className={cn(
-                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                "flex-1 py-2 px-4 text-sm font-medium transition-all border",
                 employee.basePayType === 'standard'
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-primary hover:bg-primary hover:text-primary-foreground"
               )}
             >
               Standard (${location.standardRate}/hr)
@@ -212,10 +212,10 @@ export function EmployeeCard({
             <button
               onClick={() => onUpdate({ ...employee, basePayType: 'premium' })}
               className={cn(
-                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                "flex-1 py-2 px-4 text-sm font-medium transition-all border",
                 employee.basePayType === 'premium'
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-primary hover:bg-primary hover:text-primary-foreground"
               )}
             >
               Premium (${location.premiumRate}/hr)

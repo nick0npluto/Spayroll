@@ -28,6 +28,7 @@ export interface PayrollData {
   employees: Employee[];
   expenses: number;
   weekLabel: string;
+  roundedPayment: number | null;
 }
 
 export interface EmployeePayBreakdown {
