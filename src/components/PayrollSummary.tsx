@@ -1,0 +1,80 @@
+import React from 'react';
+import { DollarSign, MinusCircle, Calculator } from 'lucide-react';
+import { Employee, LocationProfile } from '@/types/payroll';
+import { calculateTotalPayroll, formatCurrency } from '@/utils/payrollCalculations';
+
+interface PayrollSummaryProps {
+  employees: Employee[];
+  location: LocationProfile;
+  expenses: number;
+  onExpensesChange: (value: number) => void;
+}
+
+export function PayrollSummary({
+  employees,
+  location,
+  expenses,
+  onExpensesChange,
+}: PayrollSummaryProps) {
+  const totalPayroll = calculateTotalPayroll(employees, location);
+  const netTotal = totalPayroll - expenses;
+
+  return (
+    <div className="summary-card">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+          <Calculator className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Payroll Summary</h3>
+          <p className="text-sm text-muted-foreground">
+            {employees.length} employee{employees.length !== 1 ? 's' : ''} • {location.name}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {/* Total Payroll */}
+        <div className="flex items-center justify-between py-3 border-b border-primary/10">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-muted-foreground" />
+            <span className="text-foreground font-medium">Total Payroll</span>
+          </div>
+          <span className="text-xl font-bold text-foreground">
+            {formatCurrency(totalPayroll)}
+          </span>
+        </div>
+
+        {/* Expenses */}
+        <div className="flex items-center justify-between py-3 border-b border-primary/10">
+          <div className="flex items-center gap-3">
+            <MinusCircle className="w-5 h-5 text-muted-foreground" />
+            <span className="text-foreground font-medium">Expenses</span>
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              $
+            </span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={expenses || ''}
+              onChange={(e) => onExpensesChange(parseFloat(e.target.value) || 0)}
+              placeholder="0.00"
+              className="numeric-input w-32 pl-7 text-right"
+            />
+          </div>
+        </div>
+
+        {/* Net Total */}
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-lg font-semibold text-foreground">Net Total</span>
+          <span className={`text-2xl font-bold ${netTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
+            {formatCurrency(netTotal)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
