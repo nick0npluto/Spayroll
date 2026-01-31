@@ -8,8 +8,6 @@ interface PayrollSummaryProps {
   location: LocationProfile;
   expenses: number;
   onExpensesChange: (value: number) => void;
-  roundedPayment: number | null;
-  onRoundedPaymentChange: (value: number | null) => void;
 }
 
 export function PayrollSummary({
@@ -17,11 +15,14 @@ export function PayrollSummary({
   location,
   expenses,
   onExpensesChange,
-  roundedPayment,
-  onRoundedPaymentChange,
 }: PayrollSummaryProps) {
   const totalPayroll = calculateTotalPayroll(employees, location);
   const netTotal = totalPayroll + expenses;
+  
+  // Calculate actual payment from individual employee actuals
+  const actualPayment = employees.reduce((sum, emp) => {
+    return sum + (emp.actualPaid ?? 0);
+  }, 0);
 
   return (
     <div className="summary-card">
@@ -79,32 +80,15 @@ export function PayrollSummary({
           </span>
         </div>
 
-        {/* Rounded Payment (Actual Amount Paid) */}
+        {/* Actual Payment (auto-calculated from employee actuals) */}
         <div className="flex items-center justify-between py-3 bg-primary/5 px-3 -mx-3">
           <div className="flex items-center gap-3">
             <Banknote className="w-5 h-5 text-primary" />
-            <div>
-              <span className="text-foreground font-medium">Actual Payment</span>
-              <p className="text-xs text-muted-foreground">Rounded amount paid</p>
-            </div>
+            <span className="text-foreground font-medium">Actual Payment</span>
           </div>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-medium">
-              $
-            </span>
-            <input
-              type="number"
-              step="1"
-              min="0"
-              value={roundedPayment ?? ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                onRoundedPaymentChange(val === '' ? null : parseFloat(val) || 0);
-              }}
-              placeholder={Math.ceil(netTotal).toString()}
-              className="numeric-input w-32 pl-7 text-right border-primary bg-background"
-            />
-          </div>
+          <span className="text-2xl font-bold text-primary">
+            {formatCurrency(actualPayment)}
+          </span>
         </div>
       </div>
     </div>

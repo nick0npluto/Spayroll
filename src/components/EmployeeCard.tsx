@@ -348,7 +348,7 @@ export function EmployeeCard({
 
       {/* Pay breakdown */}
       <div className="border-t border-border pt-4 mt-4">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Sun–Fri</p>
             <p className="text-sm font-semibold text-foreground">
@@ -366,6 +366,26 @@ export function EmployeeCard({
             <p className="text-sm font-bold text-primary">
               {formatCurrency(payBreakdown.totalPay)}
             </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Actual</p>
+            <div className="relative">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                $
+              </span>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={employee.actualPaid ?? ''}
+                onChange={(e) => onUpdate({
+                  ...employee,
+                  actualPaid: e.target.value === '' ? null : parseFloat(e.target.value) || 0,
+                })}
+                placeholder={Math.round(payBreakdown.totalPay).toString()}
+                className="numeric-input w-full pl-5 text-center text-sm py-1"
+              />
+            </div>
           </div>
         </div>
       </div>

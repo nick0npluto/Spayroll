@@ -21,6 +21,7 @@ export interface Employee {
   saturdayWorked: boolean;
   saturdayHours: number;
   saturdayRate: number | null;
+  actualPaid: number | null;
 }
 
 export interface PayrollData {

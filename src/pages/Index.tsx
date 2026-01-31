@@ -24,6 +24,7 @@ function createEmployee(location: LocationProfile): Employee {
     saturdayWorked: false,
     saturdayHours: 0,
     saturdayRate: location.customSaturdayRunnerRate,
+    actualPaid: null,
   };
 }
 
@@ -39,7 +40,6 @@ const Index = () => {
   const [selectedLocation, setSelectedLocation] = useState<LocationProfile | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [expenses, setExpenses] = useState<number>(0);
-  const [roundedPayment, setRoundedPayment] = useState<number | null>(null);
   const [weekLabel, setWeekLabel] = useState<string>(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -117,7 +117,6 @@ const Index = () => {
     setSelectedLocation(null);
     setEmployees([]);
     setExpenses(0);
-    setRoundedPayment(null);
   };
 
   const handleImport = (data: ImportedData) => {
@@ -288,8 +287,6 @@ const Index = () => {
               location={selectedLocation}
               expenses={expenses}
               onExpensesChange={setExpenses}
-              roundedPayment={roundedPayment}
-              onRoundedPaymentChange={setRoundedPayment}
             />
 
             {/* Action buttons */}
@@ -329,7 +326,7 @@ const Index = () => {
             employees,
             expenses,
             weekLabel,
-            roundedPayment,
+            roundedPayment: employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0),
           }}
           onClose={() => setShowExportModal(false)}
           onImport={handleImport}
