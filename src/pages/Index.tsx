@@ -47,6 +47,7 @@ const Index = () => {
     const day = String(now.getDate()).padStart(2, '0');
     return `WeekOf_${year}-${month}-${day}`;
   });
+  const [cashForWeek, setCashForWeek] = useState<string>('');
 
   // Modal states
   const [settingsLocation, setSettingsLocation] = useState<LocationProfile | null>(null);
@@ -265,6 +266,29 @@ const Index = () => {
                 placeholder="e.g., WeekOf_2026-01-14"
                 className="input-premium w-full text-sm"
               />
+            </div>
+
+            {/* Cash for the week input */}
+            <div className="max-w-md">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
+                Cash for the Week
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={cashForWeek}
+                  onChange={(e) => setCashForWeek(e.target.value)}
+                  placeholder="$Mon, $Tue, $Wed, $Thur, $Fri, $Sat, $Sun"
+                  className="input-premium w-full text-sm"
+                />
+                <span className="text-muted-foreground font-medium whitespace-nowrap">
+                  Total: ${cashForWeek
+                    .split(',')
+                    .map(v => parseFloat(v.replace(/[^0-9.-]/g, '')) || 0)
+                    .reduce((sum, n) => sum + n, 0)
+                    .toFixed(2)}
+                </span>
+            </div>
             </div>
 
             {/* Employee cards */}
