@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
-import { Employee, EmployeeRole, LocationProfile, ROLE_DISPLAY_NAMES } from '@/types/payroll';
+import { Employee, EmployeeRole, LocationProfile, ROLE_DISPLAY_NAMES, OWNER_RATES } from '@/types/payroll';
 import { calculateEmployeePay, formatCurrency } from '@/utils/payrollCalculations';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -59,14 +59,28 @@ export function EmployeeCard({
   const payBreakdown = calculateEmployeePay(employee, location);
 
   const isManager = employee.role === 'lot-manager' || employee.role === 'box-manager';
+  const isOwner = employee.role === 'owner';
   const showSaturdayRate = employee.role === 'runner' && employee.saturdayWorked;
+  const showManagerCustomSaturdayControls =
+    isManager &&
+    employee.saturdayWorked &&
+    location.id === 'rock-steady';
 
   const handleRoleChange = (role: EmployeeRole) => {
     const updatedEmployee: Employee = {
       ...employee,
       role,
-      // Managers always use premium, reset for runners
+      // Managers and owner always use premium/fixed, reset for runners
       basePayType: role === 'runner' ? employee.basePayType : 'premium',
+      // Clear manager Saturday custom rate if switching away from manager
+      useCustomManagerSaturdayRate:
+        role === 'lot-manager' || role === 'box-manager'
+          ? employee.useCustomManagerSaturdayRate ?? false
+          : false,
+      managerSaturdayRate:
+        role === 'lot-manager' || role === 'box-manager'
+          ? employee.managerSaturdayRate ?? null
+          : null,
     };
     onUpdate(updatedEmployee);
     setShowRoleDropdown(false);
@@ -97,17 +111,22 @@ export function EmployeeCard({
       saturdayRate: checked && employee.role === 'runner' 
         ? (location.customSaturdayRunnerRate ?? location.premiumRate)
         : null,
+      // Reset manager-specific Saturday settings when turning Saturday off
+      useCustomManagerSaturdayRate: checked ? employee.useCustomManagerSaturdayRate ?? false : false,
+      managerSaturdayRate: checked ? employee.managerSaturdayRate ?? null : null,
     });
   };
 
-  const getRoleBadgeClass = () => {
-    switch (employee.role) {
+  const getRoleBadgeClass = (role: EmployeeRole = employee.role) => {
+    switch (role) {
       case 'runner':
         return 'role-badge-runner';
       case 'lot-manager':
         return 'role-badge-lot-manager';
       case 'box-manager':
         return 'role-badge-box-manager';
+      case 'owner':
+        return 'role-badge-owner';
       default:
         return '';
     }
@@ -169,7 +188,7 @@ export function EmployeeCard({
           {showRoleDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border 
                             rounded-xl shadow-lg z-20 overflow-hidden animate-scale-in">
-              {(['runner', 'lot-manager', 'box-manager'] as EmployeeRole[]).map((role) => (
+              {(['runner', 'lot-manager', 'box-manager', 'owner'] as EmployeeRole[]).map((role) => (
                 <button
                   key={role}
                   onClick={() => handleRoleChange(role)}
@@ -178,10 +197,7 @@ export function EmployeeCard({
                     employee.role === role && "bg-primary/10"
                   )}
                 >
-                  <span className={cn('role-badge', 
-                    role === 'runner' ? 'role-badge-runner' :
-                    role === 'lot-manager' ? 'role-badge-lot-manager' : 'role-badge-box-manager'
-                  )}>
+                  <span className={cn('role-badge', getRoleBadgeClass(role))}>
                     {ROLE_DISPLAY_NAMES[role]}
                   </span>
                 </button>
@@ -190,6 +206,15 @@ export function EmployeeCard({
           )}
         </div>
       </div>
+
+      {/* Owner fixed rate notice */}
+      {isOwner && (
+        <div className="mb-4 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
+          <p className="text-xs font-medium text-primary">
+            Manager+ rates: ${OWNER_RATES.sunFriRate}/hr (Sun–Fri) · ${OWNER_RATES.saturdayRate}/hr (Saturday)
+          </p>
+        </div>
+      )}
 
       {/* Base pay type (only for runners) */}
       {employee.role === 'runner' && (
@@ -225,7 +250,7 @@ export function EmployeeCard({
       )}
 
       {/* Managers always premium notice */}
-      {isManager && (
+      {isManager && !isOwner && (
         <div className="mb-4 px-3 py-2 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
             Managers use Premium rate (${location.premiumRate}/hr)
@@ -335,12 +360,69 @@ export function EmployeeCard({
             </div>
           )}
 
-          {/* Managers saturday rate info */}
-          {isManager && (
-            <div className="px-3 py-2 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                Saturday uses Premium (${location.premiumRate}/hr)
-              </p>
+          {/* Managers Saturday custom rate controls (Rock Steady only) */}
+          {showManagerCustomSaturdayControls && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-1">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Use custom Saturday rate for manager
+                </label>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={!!employee.useCustomManagerSaturdayRate}
+                    onCheckedChange={(checked) =>
+                      onUpdate({
+                        ...employee,
+                        useCustomManagerSaturdayRate: checked,
+                        managerSaturdayRate: checked
+                          ? employee.managerSaturdayRate ?? location.premiumRate
+                          : null,
+                      })
+                    }
+                  />
+                  <span className="text-sm text-foreground min-w-[28px]">
+                    {employee.useCustomManagerSaturdayRate ? 'On' : 'Off'}
+                  </span>
+                </div>
+              </div>
+
+              {employee.useCustomManagerSaturdayRate && (
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">
+                    Manager Saturday Rate (custom $/hr)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={employee.managerSaturdayRate ?? ''}
+                      onChange={(e) =>
+                        onUpdate({
+                          ...employee,
+                          managerSaturdayRate:
+                            e.target.value === ''
+                              ? null
+                              : parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder={location.premiumRate.toString()}
+                      className="numeric-input w-full pl-7 text-left"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!employee.useCustomManagerSaturdayRate && (
+                <div className="px-3 py-2 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    Saturday uses Premium (${location.premiumRate}/hr) unless a custom manager Saturday rate is enabled.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

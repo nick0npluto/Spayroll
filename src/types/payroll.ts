@@ -8,7 +8,7 @@ export interface LocationProfile {
   customSaturdayRunnerRate: number | null;
 }
 
-export type EmployeeRole = 'runner' | 'lot-manager' | 'box-manager';
+export type EmployeeRole = 'runner' | 'lot-manager' | 'box-manager' | 'owner';
 
 export type BasePayType = 'standard' | 'premium';
 
@@ -20,7 +20,21 @@ export interface Employee {
   sunFriHours: number;
   saturdayWorked: boolean;
   saturdayHours: number;
+  /**
+   * Custom Saturday rate for runners.
+   * For managers, use managerSaturdayRate instead so we can
+   * distinguish in logic and exports.
+   */
   saturdayRate: number | null;
+  /**
+   * When true (and role is a manager), Saturday pay uses
+   * managerSaturdayRate instead of the location premium rate.
+   */
+  useCustomManagerSaturdayRate?: boolean;
+  /**
+   * Custom Saturday rate specifically for managers (Lot / Box).
+   */
+  managerSaturdayRate?: number | null;
   actualPaid: number | null;
 }
 
@@ -66,4 +80,11 @@ export const ROLE_DISPLAY_NAMES: Record<EmployeeRole, string> = {
   'runner': 'Runner',
   'lot-manager': 'Lot Manager',
   'box-manager': 'Box Manager',
+  'owner': 'Manager+',
 };
+
+/** Fixed pay rates for the Owner role — not tied to location rates. */
+export const OWNER_RATES = {
+  sunFriRate: 25,
+  saturdayRate: 30,
+} as const;

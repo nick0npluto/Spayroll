@@ -195,6 +195,10 @@
     @apply bg-[hsl(var(--role-box-manager)/0.1)] text-[hsl(var(--role-box-manager))] border-[hsl(var(--role-box-manager)/0.3)];
   }
 
+  .role-badge-owner {
+    @apply bg-amber-500/10 text-amber-600 border-amber-500/30 font-semibold;
+  }
+
   /* Summary section */
   .summary-card {
     @apply bg-primary/5 border-2 border-primary/30 p-6;

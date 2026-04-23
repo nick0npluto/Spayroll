@@ -24,6 +24,8 @@ function createEmployee(location: LocationProfile): Employee {
     saturdayWorked: false,
     saturdayHours: 0,
     saturdayRate: location.customSaturdayRunnerRate,
+    useCustomManagerSaturdayRate: false,
+    managerSaturdayRate: null,
     actualPaid: null,
   };
 }
@@ -137,6 +139,23 @@ const Index = () => {
     setWeekLabel(data.weekLabel);
     setStep('payroll');
   };
+
+  // Calculate sum from comma-separated cash values
+  const calculateCashTotal = (input: string): number => {
+    if (!input.trim()) return 0;
+    
+    return input
+      .split(',')
+      .map((val) => {
+        // Remove $ sign and whitespace, then parse
+        const cleaned = val.trim().replace(/^\$/, '');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
+      })
+      .reduce((sum, num) => sum + num, 0);
+  };
+
+  const cashTotal = calculateCashTotal(cashForWeek);
 
   return (
     <div className="min-h-screen bg-background">
@@ -278,17 +297,15 @@ const Index = () => {
                   type="text"
                   value={cashForWeek}
                   onChange={(e) => setCashForWeek(e.target.value)}
-                  placeholder="$Mon, $Tue, $Wed, $Thur, $Fri, $Sat, $Sun"
-                  className="input-premium w-full text-sm"
+                  placeholder="$Mon, $Tue, $Wed, $Thu, $Fri, $Sat, $Sun"
+                  className="input-premium flex-1 text-sm"
                 />
-                <span className="text-muted-foreground font-medium whitespace-nowrap">
-                  Total: ${cashForWeek
-                    .split(',')
-                    .map(v => parseFloat(v.replace(/[^0-9.-]/g, '')) || 0)
-                    .reduce((sum, n) => sum + n, 0)
-                    .toFixed(2)}
-                </span>
-            </div>
+                {cashForWeek.trim() && (
+                  <div className="text-lg font-semibold text-foreground whitespace-nowrap">
+                    ${cashTotal.toFixed(2)}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Employee cards */}

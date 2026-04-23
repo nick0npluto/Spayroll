@@ -1,4 +1,4 @@
-import { Employee, LocationProfile, EmployeePayBreakdown } from '@/types/payroll';
+import { Employee, LocationProfile, EmployeePayBreakdown, OWNER_RATES } from '@/types/payroll';
 
 export function calculateEmployeePay(
   employee: Employee,
@@ -7,7 +7,10 @@ export function calculateEmployeePay(
   // Determine the rate for Sun-Fri based on role and pay type
   let sunFriRate: number;
   
-  if (employee.role === 'runner') {
+  if (employee.role === 'owner') {
+    // Owner has a fixed personal rate, not tied to location rates
+    sunFriRate = OWNER_RATES.sunFriRate;
+  } else if (employee.role === 'runner') {
     // Runners can use standard or premium rate based on selection
     sunFriRate = employee.basePayType === 'premium' 
       ? location.premiumRate 
@@ -23,13 +26,23 @@ export function calculateEmployeePay(
   let saturdayPay = 0;
   
   if (employee.saturdayWorked && employee.saturdayHours > 0) {
-    if (employee.role === 'runner') {
+    if (employee.role === 'owner') {
+      // Owner has a fixed personal Saturday rate
+      saturdayPay = employee.saturdayHours * OWNER_RATES.saturdayRate;
+    } else if (employee.role === 'runner') {
       // Runners use custom Saturday rate
       const satRate = employee.saturdayRate ?? location.customSaturdayRunnerRate ?? location.premiumRate;
       saturdayPay = employee.saturdayHours * satRate;
     } else {
-      // Managers use premium rate on Saturday
-      saturdayPay = employee.saturdayHours * location.premiumRate;
+      // Managers can optionally use a custom Saturday rate
+      const useCustom =
+        employee.useCustomManagerSaturdayRate && employee.managerSaturdayRate != null;
+
+      const satRate = useCustom
+        ? employee.managerSaturdayRate!
+        : location.premiumRate;
+
+      saturdayPay = employee.saturdayHours * satRate;
     }
   }
   

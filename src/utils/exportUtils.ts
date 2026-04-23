@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Employee, LocationProfile, ROLE_DISPLAY_NAMES } from '@/types/payroll';
+import { Employee, LocationProfile, ROLE_DISPLAY_NAMES, OWNER_RATES } from '@/types/payroll';
 import { calculateEmployeePay, formatCurrency } from './payrollCalculations';
 
 export interface ExportData {
@@ -62,12 +62,20 @@ export function exportToPDF(data: ExportData): void {
     return [
       emp.name || 'Unnamed',
       ROLE_DISPLAY_NAMES[emp.role],
-      emp.role === 'runner' ? emp.basePayType.charAt(0).toUpperCase() + emp.basePayType.slice(1) : 'Premium',
+      emp.role === 'owner'
+        ? `Manager+ ($${OWNER_RATES.sunFriRate}/hr)`
+        : emp.role === 'runner'
+          ? emp.basePayType.charAt(0).toUpperCase() + emp.basePayType.slice(1)
+          : 'Premium',
       emp.sunFriHours.toFixed(2),
       emp.saturdayWorked ? emp.saturdayHours.toFixed(2) : '-',
-      emp.role === 'runner' && emp.saturdayWorked && emp.saturdayRate 
-        ? `$${emp.saturdayRate}` 
-        : '-',
+      emp.role === 'owner' && emp.saturdayWorked
+        ? `$${OWNER_RATES.saturdayRate}`
+        : emp.role === 'runner' && emp.saturdayWorked && emp.saturdayRate
+          ? `$${emp.saturdayRate}`
+          : emp.useCustomManagerSaturdayRate && emp.managerSaturdayRate != null && emp.saturdayWorked
+            ? `$${emp.managerSaturdayRate}`
+            : '-',
       formatCurrency(pay.sunFriPay),
       formatCurrency(pay.saturdayPay),
       formatCurrency(pay.totalPay),
@@ -197,9 +205,13 @@ export function exportToCSV(data: ExportData): void {
       emp.sunFriHours.toString(),
       emp.saturdayWorked ? 'Yes' : 'No',
       emp.saturdayHours.toString(),
-      emp.role === 'runner' && emp.saturdayWorked && emp.saturdayRate 
-        ? emp.saturdayRate.toString() 
-        : '',
+      emp.role === 'owner' && emp.saturdayWorked
+        ? OWNER_RATES.saturdayRate.toString()
+        : emp.role === 'runner' && emp.saturdayWorked && emp.saturdayRate
+          ? emp.saturdayRate.toString()
+          : emp.useCustomManagerSaturdayRate && emp.managerSaturdayRate != null && emp.saturdayWorked
+            ? emp.managerSaturdayRate.toString()
+            : '',
       pay.sunFriPay.toFixed(2),
       pay.saturdayPay.toFixed(2),
       pay.totalPay.toFixed(2),
@@ -271,6 +283,8 @@ export function exportToJSON(data: ExportData): string {
       saturdayWorked: emp.saturdayWorked,
       saturdayHours: emp.saturdayHours,
       saturdayRate: emp.saturdayRate,
+      useCustomManagerSaturdayRate: emp.useCustomManagerSaturdayRate ?? false,
+      managerSaturdayRate: emp.managerSaturdayRate ?? null,
     })),
     expenses,
     roundedPayment,
@@ -332,6 +346,9 @@ export function parseImportedJSON(jsonString: string): ImportedData | null {
         saturdayWorked: emp.saturdayWorked || false,
         saturdayHours: emp.saturdayHours || 0,
         saturdayRate: emp.saturdayRate || null,
+        useCustomManagerSaturdayRate: emp.useCustomManagerSaturdayRate || false,
+        managerSaturdayRate: emp.managerSaturdayRate ?? null,
+        actualPaid: emp.actualPaid ?? null,
       })),
       expenses: data.expenses || 0,
       weekLabel: data.weekLabel || '',
