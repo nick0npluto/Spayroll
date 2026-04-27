@@ -1,4 +1,4 @@
-export type LocationId = 'rock-steady' | 'the-optimist' | 'aria-village';
+export type LocationId = 'rock-steady' | 'the-optimist' | 'aria-village' | 'prominence';
 
 export interface LocationProfile {
   id: LocationId;
@@ -46,6 +46,25 @@ export interface PayrollData {
   roundedPayment: number | null;
 }
 
+export type DayKey =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface ProminenceMetrics {
+  dailyCashByDay: Record<DayKey, number>;
+  voids: number;
+  ccDeposit: number;
+  cars: number;
+  lotFeePercent: number;
+  lotFeeOverride: number | null;
+  bankWithdrawalOverride: number | null;
+}
+
 export interface EmployeePayBreakdown {
   sunFriPay: number;
   saturdayPay: number;
@@ -70,6 +89,13 @@ export const DEFAULT_LOCATIONS: LocationProfile[] = [
   {
     id: 'aria-village',
     name: 'Aria Village',
+    standardRate: 12,
+    premiumRate: 15,
+    customSaturdayRunnerRate: null,
+  },
+  {
+    id: 'prominence',
+    name: 'Prominence',
     standardRate: 12,
     premiumRate: 15,
     customSaturdayRunnerRate: null,

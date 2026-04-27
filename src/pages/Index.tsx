@@ -1,6 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { ArrowLeft, Plus, Minus, Save, Settings, Users } from 'lucide-react';
-import { LocationProfile, Employee, DEFAULT_LOCATIONS, LocationId } from '@/types/payroll';
+import React, { useState, useCallback, useEffect } from 'react';
+import { ArrowLeft, Plus, Minus, Save, Settings, Users, Moon, Sun } from 'lucide-react';
+import {
+  LocationProfile,
+  Employee,
+  DEFAULT_LOCATIONS,
+  LocationId,
+  ProminenceMetrics,
+} from '@/types/payroll';
 import { generateUniqueId } from '@/utils/payrollCalculations';
 import { ImportedData } from '@/utils/exportUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -11,6 +17,12 @@ import { EmployeeCard } from '@/components/EmployeeCard';
 import { PayrollSummary } from '@/components/PayrollSummary';
 import { ExportModal } from '@/components/ExportModal';
 import { Button } from '@/components/ui/button';
+import { ProminencePayoutPanel } from '@/components/ProminencePayoutPanel';
+import {
+  calculateProminenceTotals,
+  createDefaultProminenceMetrics,
+} from '@/utils/prominenceCalculations';
+import { useTheme } from 'next-themes';
 
 type AppStep = 'location' | 'count' | 'payroll';
 
@@ -31,6 +43,7 @@ function createEmployee(location: LocationProfile): Employee {
 }
 
 const Index = () => {
+  const { theme, setTheme } = useTheme();
   // Persist locations with their custom rates
   const [locations, setLocations] = useLocalStorage<LocationProfile[]>(
     'payroll-locations',
@@ -50,10 +63,30 @@ const Index = () => {
     return `WeekOf_${year}-${month}-${day}`;
   });
   const [cashForWeek, setCashForWeek] = useState<string>('');
+  const [prominenceMetrics, setProminenceMetrics] = useState<ProminenceMetrics>(
+    createDefaultProminenceMetrics()
+  );
 
   // Modal states
   const [settingsLocation, setSettingsLocation] = useState<LocationProfile | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+
+  useEffect(() => {
+    // Ensure newly added default locations are available even when
+    // users already have older location data persisted in localStorage.
+    setLocations((prev) => {
+      const existingIds = new Set(prev.map((location) => location.id));
+      const missingDefaults = DEFAULT_LOCATIONS.filter(
+        (location) => !existingIds.has(location.id)
+      );
+
+      if (missingDefaults.length === 0) {
+        return prev;
+      }
+
+      return [...prev, ...missingDefaults];
+    });
+  }, [setLocations]);
 
   // Handlers
   const handleLocationSelect = (location: LocationProfile) => {
@@ -120,6 +153,8 @@ const Index = () => {
     setSelectedLocation(null);
     setEmployees([]);
     setExpenses(0);
+    setCashForWeek('');
+    setProminenceMetrics(createDefaultProminenceMetrics());
   };
 
   const handleImport = (data: ImportedData) => {
@@ -137,6 +172,7 @@ const Index = () => {
     setEmployees(data.employees);
     setExpenses(data.expenses);
     setWeekLabel(data.weekLabel);
+    setProminenceMetrics(data.locationMetrics ?? createDefaultProminenceMetrics());
     setStep('payroll');
   };
 
@@ -156,6 +192,10 @@ const Index = () => {
   };
 
   const cashTotal = calculateCashTotal(cashForWeek);
+  const prominenceTotals =
+    selectedLocation?.id === 'prominence'
+      ? calculateProminenceTotals(prominenceMetrics, employees)
+      : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,6 +225,23 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="w-4 h-4 mr-2" />
+                    Light
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 mr-2" />
+                    Dark
+                  </>
+                )}
+              </Button>
               {step === 'payroll' && selectedLocation && (
                 <>
                   <Button
@@ -287,26 +344,33 @@ const Index = () => {
               />
             </div>
 
-            {/* Cash for the week input */}
-            <div className="max-w-md">
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Cash for the Week
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={cashForWeek}
-                  onChange={(e) => setCashForWeek(e.target.value)}
-                  placeholder="$Mon, $Tue, $Wed, $Thu, $Fri, $Sat, $Sun"
-                  className="input-premium flex-1 text-sm"
-                />
-                {cashForWeek.trim() && (
-                  <div className="text-lg font-semibold text-foreground whitespace-nowrap">
-                    ${cashTotal.toFixed(2)}
-                  </div>
-                )}
+            {selectedLocation.id !== 'prominence' ? (
+              <div className="max-w-md">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Cash for the Week
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={cashForWeek}
+                    onChange={(e) => setCashForWeek(e.target.value)}
+                    placeholder="$Mon, $Tue, $Wed, $Thu, $Fri, $Sat, $Sun"
+                    className="input-premium flex-1 text-sm"
+                  />
+                  {cashForWeek.trim() && (
+                    <div className="text-lg font-semibold text-foreground whitespace-nowrap">
+                      ${cashTotal.toFixed(2)}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <ProminencePayoutPanel
+                employees={employees}
+                metrics={prominenceMetrics}
+                onMetricsChange={setProminenceMetrics}
+              />
+            )}
 
             {/* Employee cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -316,6 +380,7 @@ const Index = () => {
                   employee={employee}
                   location={selectedLocation}
                   index={index}
+                  prominenceTipOutPerHour={prominenceTotals?.tipOutPerManHour ?? 0}
                   onUpdate={handleEmployeeUpdate}
                   onDelete={handleEmployeeDelete}
                 />
@@ -328,6 +393,7 @@ const Index = () => {
               location={selectedLocation}
               expenses={expenses}
               onExpensesChange={setExpenses}
+              prominenceTotals={prominenceTotals}
             />
 
             {/* Action buttons */}
@@ -368,6 +434,7 @@ const Index = () => {
             expenses,
             weekLabel,
             roundedPayment: employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0),
+            locationMetrics: selectedLocation.id === 'prominence' ? prominenceMetrics : undefined,
           }}
           onClose={() => setShowExportModal(false)}
           onImport={handleImport}

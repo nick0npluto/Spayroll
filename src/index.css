@@ -76,34 +76,50 @@
   }
 
   .dark {
-    /* Same as root - light mode only app */
-    --background: 0 0% 100%;
-    --foreground: 220 30% 25%;
-    --card: 0 0% 99%;
-    --card-foreground: 220 30% 25%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 25%;
-    --primary: 25 95% 53%;
+    /* High-contrast dark theme */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 96%;
+    --card: 224 36% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 224 36% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 25 95% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 30% 25%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 15% 50%;
+    --secondary: 223 30% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 223 27% 20%;
+    --muted-foreground: 215 20% 75%;
     --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 50%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 56%;
+    --warning-foreground: 0 0% 10%;
+    --destructive: 0 74% 56%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 14% 85%;
-    --input: 0 0% 100%;
+    --border: 223 22% 28%;
+    --input: 224 30% 18%;
     --ring: 25 95% 53%;
-    --sidebar-background: 220 14% 98%;
-    --sidebar-foreground: 220 30% 25%;
+
+    --sidebar-background: 224 36% 14%;
+    --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 25 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 220 30% 25%;
-    --sidebar-border: 220 14% 85%;
+    --sidebar-accent: 223 30% 18%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 223 22% 28%;
     --sidebar-ring: 25 95% 53%;
+
+    --surface-elevated: 224 36% 14%;
+    --surface-overlay: 223 30% 18%;
+    --text-primary: 210 40% 96%;
+    --text-secondary: 215 20% 80%;
+    --text-tertiary: 215 16% 66%;
+    --divider: 223 22% 28%;
+
+    --role-runner: 25 95% 58%;
+    --role-lot-manager: 210 65% 80%;
+    --role-box-manager: 142 64% 55%;
   }
 }
 

@@ -2,12 +2,14 @@ import React from 'react';
 import { DollarSign, MinusCircle, Calculator, Banknote } from 'lucide-react';
 import { Employee, LocationProfile } from '@/types/payroll';
 import { calculateTotalPayroll, formatCurrency } from '@/utils/payrollCalculations';
+import { ProminenceTotals } from '@/utils/prominenceCalculations';
 
 interface PayrollSummaryProps {
   employees: Employee[];
   location: LocationProfile;
   expenses: number;
   onExpensesChange: (value: number) => void;
+  prominenceTotals?: ProminenceTotals | null;
 }
 
 export function PayrollSummary({
@@ -15,9 +17,11 @@ export function PayrollSummary({
   location,
   expenses,
   onExpensesChange,
+  prominenceTotals,
 }: PayrollSummaryProps) {
   const totalPayroll = calculateTotalPayroll(employees, location);
   const netTotal = totalPayroll + expenses;
+  const isProminence = location.id === 'prominence' && prominenceTotals;
   
   // Calculate actual payment from individual employee actuals
   const actualPayment = employees.reduce((sum, emp) => {
@@ -38,6 +42,78 @@ export function PayrollSummary({
         </div>
       </div>
 
+      {isProminence ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5 text-muted-foreground" />
+              <span className="text-foreground font-medium">Employee Pay Before Rounding</span>
+            </div>
+            <span className="text-xl font-bold text-foreground">
+              {formatCurrency(prominenceTotals.totalTipOut)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Total Hours</p>
+              <p className="text-lg font-semibold text-foreground">
+                {prominenceTotals.totalManHours.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Hourly Pay</p>
+              <p className="text-lg font-semibold text-primary">
+                {formatCurrency(prominenceTotals.tipOutPerManHour)}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Total Cash</p>
+              <p className="text-sm font-semibold text-foreground">{formatCurrency(prominenceTotals.totalCash)}</p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">CC Deposit</p>
+              <p className="text-sm font-semibold text-foreground">
+                {formatCurrency(prominenceTotals.totalRevenue - prominenceTotals.totalCash)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Lot Fee</p>
+              <p className="text-sm font-semibold text-foreground">{formatCurrency(prominenceTotals.lotFee)}</p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Bank Withdrawal</p>
+              <p className="text-sm font-semibold text-foreground">
+                {formatCurrency(prominenceTotals.bankWithdrawal)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between py-3 bg-primary/5 px-3 -mx-3">
+            <div className="flex items-center gap-3">
+              <Banknote className="w-5 h-5 text-primary" />
+              <span className="text-foreground font-medium">Actual Paid</span>
+            </div>
+            <span className="text-2xl font-bold text-primary">
+              {formatCurrency(actualPayment)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-1">
+            <span className="text-sm text-muted-foreground">Variance (Actual - Tip Out)</span>
+            <span
+              className={`text-sm font-semibold ${
+                actualPayment - prominenceTotals.totalTipOut >= 0 ? 'text-primary' : 'text-destructive'
+              }`}
+            >
+              {formatCurrency(actualPayment - prominenceTotals.totalTipOut)}
+            </span>
+          </div>
+        </div>
+      ) : (
       <div className="space-y-4">
         {/* Total Payroll */}
         <div className="flex items-center justify-between py-3 border-b border-primary/10">
@@ -91,6 +167,7 @@ export function PayrollSummary({
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 }

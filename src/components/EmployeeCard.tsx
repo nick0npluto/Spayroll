@@ -39,6 +39,7 @@ interface EmployeeCardProps {
   employee: Employee;
   location: LocationProfile;
   index: number;
+  prominenceTipOutPerHour?: number;
   onUpdate: (employee: Employee) => void;
   onDelete: (id: string) => void;
 }
@@ -47,6 +48,7 @@ export function EmployeeCard({
   employee,
   location,
   index,
+  prominenceTipOutPerHour = 0,
   onUpdate,
   onDelete,
 }: EmployeeCardProps) {
@@ -57,6 +59,9 @@ export function EmployeeCard({
   const [saturdayInput, setSaturdayInput] = useState('');
 
   const payBreakdown = calculateEmployeePay(employee, location);
+  const isProminence = location.id === 'prominence';
+  const prominenceTotalHours = employee.sunFriHours;
+  const prominenceTotalPay = prominenceTotalHours * prominenceTipOutPerHour;
 
   const isManager = employee.role === 'lot-manager' || employee.role === 'box-manager';
   const isOwner = employee.role === 'owner';
@@ -65,6 +70,19 @@ export function EmployeeCard({
     isManager &&
     employee.saturdayWorked &&
     location.id === 'rock-steady';
+  const availableRoles: EmployeeRole[] = isProminence
+    ? ['runner', 'lot-manager']
+    : ['runner', 'lot-manager', 'box-manager', 'owner'];
+
+  useEffect(() => {
+    if (isProminence && (employee.role === 'box-manager' || employee.role === 'owner')) {
+      onUpdate({
+        ...employee,
+        role: 'lot-manager',
+        basePayType: 'premium',
+      });
+    }
+  }, [employee, isProminence, onUpdate]);
 
   const handleRoleChange = (role: EmployeeRole) => {
     const updatedEmployee: Employee = {
@@ -90,7 +108,19 @@ export function EmployeeCard({
   const handleSunFriInputChange = (value: string) => {
     setSunFriInput(value);
     const totalHours = parseTimeEntries(value);
-    onUpdate({ ...employee, sunFriHours: totalHours });
+    onUpdate({
+      ...employee,
+      sunFriHours: totalHours,
+      ...(isProminence
+        ? {
+            saturdayWorked: false,
+            saturdayHours: 0,
+            saturdayRate: null,
+            useCustomManagerSaturdayRate: false,
+            managerSaturdayRate: null,
+          }
+        : {}),
+    });
   };
 
   // Handle Saturday hours input change
@@ -188,7 +218,7 @@ export function EmployeeCard({
           {showRoleDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border 
                             rounded-xl shadow-lg z-20 overflow-hidden animate-scale-in">
-              {(['runner', 'lot-manager', 'box-manager', 'owner'] as EmployeeRole[]).map((role) => (
+              {availableRoles.map((role) => (
                 <button
                   key={role}
                   onClick={() => handleRoleChange(role)}
@@ -208,7 +238,7 @@ export function EmployeeCard({
       </div>
 
       {/* Owner fixed rate notice */}
-      {isOwner && (
+      {!isProminence && isOwner && (
         <div className="mb-4 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
           <p className="text-xs font-medium text-primary">
             Manager+ rates: ${OWNER_RATES.sunFriRate}/hr (Sun–Fri) · ${OWNER_RATES.saturdayRate}/hr (Saturday)
@@ -217,7 +247,7 @@ export function EmployeeCard({
       )}
 
       {/* Base pay type (only for runners) */}
-      {employee.role === 'runner' && (
+      {!isProminence && employee.role === 'runner' && (
         <div className="mb-4">
           <label className="block text-xs font-medium text-muted-foreground mb-2">
             Base Pay Rate (Sun–Fri)
@@ -250,7 +280,7 @@ export function EmployeeCard({
       )}
 
       {/* Managers always premium notice */}
-      {isManager && !isOwner && (
+      {!isProminence && isManager && !isOwner && (
         <div className="mb-4 px-3 py-2 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
             Managers use Premium rate (${location.premiumRate}/hr)
@@ -263,7 +293,7 @@ export function EmployeeCard({
         {/* Sun-Fri Hours */}
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-2">
-            Sunday–Friday Hours
+            {isProminence ? 'Total Weekly Hours' : 'Sunday–Friday Hours'}
             <span className="text-muted-foreground/60 ml-2 font-normal">
               (comma-separated, e.g., 5:42, 4:12, 9:34)
             </span>
@@ -288,6 +318,7 @@ export function EmployeeCard({
         </div>
 
         {/* Saturday toggle */}
+        {!isProminence && (
         <div className="flex items-center justify-between py-2">
           <label className="text-xs font-medium text-muted-foreground">
             Saturday Worked?
@@ -302,10 +333,11 @@ export function EmployeeCard({
             </span>
           </div>
         </div>
+        )}
       </div>
 
       {/* Saturday details (conditional) */}
-      {employee.saturdayWorked && (
+      {!isProminence && employee.saturdayWorked && (
         <div className="space-y-4 mb-4 animate-fade-in">
           {/* Saturday hours */}
           <div>
@@ -430,6 +462,48 @@ export function EmployeeCard({
 
       {/* Pay breakdown */}
       <div className="border-t border-border pt-4 mt-4">
+        {isProminence ? (
+          <div className="grid grid-cols-4 gap-3 text-center">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Hours</p>
+              <p className="text-sm font-semibold text-foreground">
+                {prominenceTotalHours.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Hourly Pay</p>
+              <p className="text-sm font-semibold text-foreground">
+                {formatCurrency(prominenceTipOutPerHour)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Estimated</p>
+              <p className="text-sm font-bold text-primary">
+                {formatCurrency(prominenceTotalPay)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Actual</p>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  $
+                </span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={employee.actualPaid ?? ''}
+                  onChange={(e) => onUpdate({
+                    ...employee,
+                    actualPaid: e.target.value === '' ? null : parseFloat(e.target.value) || 0,
+                  })}
+                  placeholder={Math.round(prominenceTotalPay).toString()}
+                  className="numeric-input w-full pl-5 text-center text-sm py-1"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Sun–Fri</p>
@@ -470,6 +544,7 @@ export function EmployeeCard({
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

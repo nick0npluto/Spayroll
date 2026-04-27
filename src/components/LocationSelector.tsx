@@ -14,6 +14,7 @@ const locationIcons: Record<LocationId, string> = {
   'rock-steady': '🎸',
   'the-optimist': '☀️',
   'aria-village': '🏘️',
+  'prominence': '⭐',
 };
 
 export function LocationSelector({
@@ -36,7 +37,7 @@ export function LocationSelector({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {locations.map((location, index) => (
           <div
             key={location.id}
@@ -48,17 +49,19 @@ export function LocationSelector({
             onClick={() => onSelect(location)}
           >
             {/* Settings button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditSettings(location);
-              }}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-muted/50 opacity-0 group-hover:opacity-100 
-                         transition-all duration-200 hover:bg-muted"
-              title="Edit pay rates"
-            >
-              <Settings className="w-4 h-4 text-muted-foreground" />
-            </button>
+            {location.id !== 'prominence' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditSettings(location);
+                }}
+                className="absolute top-4 right-4 p-2 rounded-lg bg-muted/50 opacity-0 group-hover:opacity-100 
+                           transition-all duration-200 hover:bg-muted"
+                title="Edit pay rates"
+              >
+                <Settings className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
 
             {/* Location content */}
             <div className="text-center">
@@ -70,28 +73,37 @@ export function LocationSelector({
               </h3>
               
               {/* Pay rates preview */}
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Standard Rate</span>
-                  <span className="text-foreground font-medium">
-                    ${location.standardRate}/hr
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Premium Rate</span>
-                  <span className="text-foreground font-medium">
-                    ${location.premiumRate}/hr
-                  </span>
-                </div>
-                {location.customSaturdayRunnerRate && (
+              {location.id === 'prominence' ? (
+                <div className="space-y-1 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Sat Runner Rate</span>
+                    <span>Payout Model</span>
+                    <span className="text-foreground font-medium">Rate to be calculated</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Standard Rate</span>
                     <span className="text-foreground font-medium">
-                      ${location.customSaturdayRunnerRate}/hr
+                      ${location.standardRate}/hr
                     </span>
                   </div>
-                )}
-              </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Premium Rate</span>
+                    <span className="text-foreground font-medium">
+                      ${location.premiumRate}/hr
+                    </span>
+                  </div>
+                  {location.customSaturdayRunnerRate && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Sat Runner Rate</span>
+                      <span className="text-foreground font-medium">
+                        ${location.customSaturdayRunnerRate}/hr
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Selection indicator */}
