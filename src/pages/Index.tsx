@@ -1,30 +1,48 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { ArrowLeft, Plus, Minus, Save, Settings, Users, Moon, Sun } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Plus, Minus, Download, Settings, Users, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   LocationProfile,
   Employee,
   DEFAULT_LOCATIONS,
-  LocationId,
   ProminenceMetrics,
 } from '@/types/payroll';
 import { generateUniqueId } from '@/utils/payrollCalculations';
 import { ImportedData } from '@/utils/exportUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import {
+  usePayrollDraft,
+  type AppStep,
+  type PayrollDraft,
+} from '@/hooks/usePayrollDraft';
+import { AppShell } from '@/components/layout/AppShell';
+import { ResumeDraftBanner } from '@/components/layout/ResumeDraftBanner';
+import { MobileSummaryBar } from '@/components/layout/MobileSummaryBar';
 import { LocationSelector } from '@/components/LocationSelector';
 import { LocationSettingsModal } from '@/components/LocationSettingsModal';
 import { EmployeeCountPrompt } from '@/components/EmployeeCountPrompt';
 import { EmployeeCard } from '@/components/EmployeeCard';
 import { PayrollSummary } from '@/components/PayrollSummary';
 import { ExportModal } from '@/components/ExportModal';
+import { WeekHeader } from '@/components/WeekHeader';
 import { Button } from '@/components/ui/button';
 import { ProminencePayoutPanel } from '@/components/ProminencePayoutPanel';
 import {
   calculateProminenceTotals,
   createDefaultProminenceMetrics,
 } from '@/utils/prominenceCalculations';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTheme } from 'next-themes';
-
-type AppStep = 'location' | 'count' | 'payroll';
+import { formatCurrency } from '@/utils/payrollCalculations';
 
 function createEmployee(location: LocationProfile): Employee {
   return {
@@ -42,405 +60,407 @@ function createEmployee(location: LocationProfile): Employee {
   };
 }
 
+function calculateCashTotal(input: string): number {
+  if (!input.trim()) return 0;
+  return input
+    .split(',')
+    .map((val) => {
+      const cleaned = val.trim().replace(/^\$/, '');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
+    })
+    .reduce((sum, num) => sum + num, 0);
+}
+
 const Index = () => {
   const { theme, setTheme } = useTheme();
-  // Persist locations with their custom rates
   const [locations, setLocations] = useLocalStorage<LocationProfile[]>(
     'payroll-locations',
     DEFAULT_LOCATIONS
   );
 
-  // App state
-  const [step, setStep] = useState<AppStep>('location');
-  const [selectedLocation, setSelectedLocation] = useState<LocationProfile | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [expenses, setExpenses] = useState<number>(0);
-  const [weekLabel, setWeekLabel] = useState<string>(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `WeekOf_${year}-${month}-${day}`;
-  });
-  const [cashForWeek, setCashForWeek] = useState<string>('');
-  const [prominenceMetrics, setProminenceMetrics] = useState<ProminenceMetrics>(
-    createDefaultProminenceMetrics()
-  );
+  const {
+    draft,
+    updateDraft,
+    resetDraft,
+    pendingResume,
+    resumeDraft,
+    dismissResume,
+    hasCheckedStorage,
+  } = usePayrollDraft();
 
-  // Modal states
   const [settingsLocation, setSettingsLocation] = useState<LocationProfile | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<AppStep | null>(null);
+
+  const step = draft.step;
+  const selectedLocation = draft.selectedLocation;
+  const employees = draft.employees;
+  const expenses = draft.expenses;
+  const weekLabel = draft.weekLabel;
+  const cashForWeek = draft.cashForWeek;
+  const prominenceMetrics = draft.prominenceMetrics;
 
   useEffect(() => {
-    // Ensure newly added default locations are available even when
-    // users already have older location data persisted in localStorage.
     setLocations((prev) => {
-      const existingIds = new Set(prev.map((location) => location.id));
-      const missingDefaults = DEFAULT_LOCATIONS.filter(
-        (location) => !existingIds.has(location.id)
-      );
-
-      if (missingDefaults.length === 0) {
-        return prev;
-      }
-
-      return [...prev, ...missingDefaults];
+      const existingIds = new Set(prev.map((l) => l.id));
+      const missingDefaults = DEFAULT_LOCATIONS.filter((l) => !existingIds.has(l.id));
+      return missingDefaults.length === 0 ? prev : [...prev, ...missingDefaults];
     });
   }, [setLocations]);
 
-  // Handlers
+  const patchDraft = useCallback(
+    (partial: Partial<PayrollDraft>) => {
+      updateDraft((prev) => ({ ...prev, ...partial }));
+    },
+    [updateDraft]
+  );
+
   const handleLocationSelect = (location: LocationProfile) => {
-    setSelectedLocation(location);
-    setStep('count');
+    patchDraft({
+      selectedLocation: location,
+      step: 'count',
+      employees: [],
+      prominenceMetrics: createDefaultProminenceMetrics(),
+    });
   };
 
   const handleLocationSettingsSave = (updatedLocation: LocationProfile) => {
     setLocations((prev) =>
-      prev.map((loc) =>
-        loc.id === updatedLocation.id ? updatedLocation : loc
-      )
+      prev.map((loc) => (loc.id === updatedLocation.id ? updatedLocation : loc))
     );
-    // Update selected location if it's the one being edited
     if (selectedLocation?.id === updatedLocation.id) {
-      setSelectedLocation(updatedLocation);
+      patchDraft({ selectedLocation: updatedLocation });
     }
+    toast.success('Pay rates updated');
   };
 
   const handleEmployeeCountConfirm = (count: number) => {
     if (!selectedLocation) return;
-    
-    const newEmployees: Employee[] = Array.from({ length: count }, () =>
-      createEmployee(selectedLocation)
+
+    if (employees.length === count) {
+      patchDraft({ step: 'payroll' });
+      return;
+    }
+
+    const newEmployees: Employee[] = Array.from({ length: count }, (_, i) =>
+      employees[i] ? { ...employees[i] } : createEmployee(selectedLocation)
     );
-    setEmployees(newEmployees);
-    setStep('payroll');
+    patchDraft({ employees: newEmployees, step: 'payroll' });
   };
 
-  const handleEmployeeUpdate = useCallback((updatedEmployee: Employee) => {
-    setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === updatedEmployee.id ? updatedEmployee : emp
-      )
-    );
-  }, []);
+  const handleEmployeeUpdate = useCallback(
+    (updatedEmployee: Employee) => {
+      updateDraft((prev) => ({
+        ...prev,
+        employees: prev.employees.map((emp) =>
+          emp.id === updatedEmployee.id ? updatedEmployee : emp
+        ),
+      }));
+    },
+    [updateDraft]
+  );
 
-  const handleEmployeeDelete = useCallback((id: string) => {
-    setEmployees((prev) => prev.filter((emp) => emp.id !== id));
-  }, []);
+  const handleEmployeeDelete = useCallback(
+    (id: string) => {
+      updateDraft((prev) => ({
+        ...prev,
+        employees: prev.employees.filter((emp) => emp.id !== id),
+      }));
+    },
+    [updateDraft]
+  );
 
   const handleAddEmployee = () => {
     if (!selectedLocation) return;
-    setEmployees((prev) => [...prev, createEmployee(selectedLocation)]);
+    updateDraft((prev) => ({
+      ...prev,
+      employees: [...prev.employees, createEmployee(selectedLocation)],
+    }));
   };
 
   const handleRemoveLastEmployee = () => {
     if (employees.length > 1) {
-      setEmployees((prev) => prev.slice(0, -1));
+      updateDraft((prev) => ({
+        ...prev,
+        employees: prev.employees.slice(0, -1),
+      }));
     }
+  };
+
+  const goToStep = (target: AppStep) => {
+    if (target === step) return;
+
+    if (step === 'payroll' && employees.some((e) => e.name || e.sunFriHours > 0)) {
+      setConfirmStep(target);
+      return;
+    }
+
+    applyStep(target);
+  };
+
+  const applyStep = (target: AppStep) => {
+    if (target === 'location') {
+      patchDraft({
+        step: 'location',
+        selectedLocation: null,
+        employees: [],
+      });
+    } else if (target === 'count') {
+      patchDraft({ step: 'count' });
+    } else {
+      patchDraft({ step: 'payroll' });
+    }
+    setConfirmStep(null);
   };
 
   const handleBack = () => {
-    if (step === 'payroll') {
-      setStep('count');
-    } else if (step === 'count') {
-      setStep('location');
-      setSelectedLocation(null);
-    }
+    if (step === 'payroll') goToStep('count');
+    else if (step === 'count') goToStep('location');
   };
 
   const handleStartOver = () => {
-    setStep('location');
-    setSelectedLocation(null);
-    setEmployees([]);
-    setExpenses(0);
-    setCashForWeek('');
-    setProminenceMetrics(createDefaultProminenceMetrics());
+    resetDraft();
+    toast.info('Started a new payroll');
   };
 
   const handleImport = (data: ImportedData) => {
-    // Find matching location or use the imported one
     const matchingLocation = locations.find((loc) => loc.id === data.location.id);
-    
+
     if (matchingLocation) {
-      setSelectedLocation(matchingLocation);
+      patchDraft({ selectedLocation: matchingLocation });
     } else {
-      // Add the imported location to our list
       setLocations((prev) => [...prev, data.location]);
-      setSelectedLocation(data.location);
+      patchDraft({ selectedLocation: data.location });
     }
-    
-    setEmployees(data.employees);
-    setExpenses(data.expenses);
-    setWeekLabel(data.weekLabel);
-    setProminenceMetrics(data.locationMetrics ?? createDefaultProminenceMetrics());
-    setStep('payroll');
+
+    patchDraft({
+      employees: data.employees,
+      expenses: data.expenses,
+      weekLabel: data.weekLabel,
+      cashForWeek: data.cashForWeek ?? '',
+      prominenceMetrics: data.locationMetrics ?? createDefaultProminenceMetrics(),
+      step: 'payroll',
+    });
+    toast.success('Payroll imported successfully');
   };
 
-  // Calculate sum from comma-separated cash values
-  const calculateCashTotal = (input: string): number => {
-    if (!input.trim()) return 0;
-    
-    return input
-      .split(',')
-      .map((val) => {
-        // Remove $ sign and whitespace, then parse
-        const cleaned = val.trim().replace(/^\$/, '');
-        const num = parseFloat(cleaned);
-        return isNaN(num) ? 0 : num;
-      })
-      .reduce((sum, num) => sum + num, 0);
+  const handleResume = () => {
+    resumeDraft();
+    toast.success('Draft restored');
   };
 
   const cashTotal = calculateCashTotal(cashForWeek);
-  const prominenceTotals =
-    selectedLocation?.id === 'prominence'
-      ? calculateProminenceTotals(prominenceMetrics, employees)
-      : null;
+  const prominenceTotals = useMemo(
+    () =>
+      selectedLocation?.id === 'prominence'
+        ? calculateProminenceTotals(prominenceMetrics, employees)
+        : null,
+    [selectedLocation, prominenceMetrics, employees]
+  );
+
+  const actualPayment = employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0);
+  const summaryValue = prominenceTotals
+    ? formatCurrency(actualPayment)
+    : formatCurrency(actualPayment);
+
+  const summaryPanel =
+    selectedLocation && step === 'payroll' ? (
+      <PayrollSummary
+        employees={employees}
+        location={selectedLocation}
+        expenses={expenses}
+        onExpensesChange={(v) => patchDraft({ expenses: v })}
+        prominenceTotals={prominenceTotals}
+      />
+    ) : null;
+
+  const headerActions =
+    step === 'payroll' && selectedLocation ? (
+      <>
+        {selectedLocation.id !== 'prominence' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSettingsLocation(selectedLocation)}
+          >
+            <Settings className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Rates</span>
+          </Button>
+        )}
+        <Button
+          size="sm"
+          onClick={() => setShowExportModal(true)}
+          className="bg-primary hover:bg-primary/90"
+        >
+          <Download className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Export</span>
+        </Button>
+      </>
+    ) : null;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              {step !== 'location' && (
-                <button
-                  onClick={handleBack}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              )}
+  <>
+    <AppShell
+      step={step}
+      locationName={selectedLocation?.name}
+      showBack={step !== 'location'}
+      onBack={handleBack}
+      onStepClick={goToStep}
+      theme={theme}
+      onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      headerActions={headerActions}
+      sidebar={summaryPanel}
+    >
+      {hasCheckedStorage && pendingResume && step === 'location' && (
+        <ResumeDraftBanner
+          draft={pendingResume}
+          onResume={handleResume}
+          onDismiss={dismissResume}
+        />
+      )}
+
+      {step === 'location' && (
+        <div className="step-enter">
+          <LocationSelector
+            locations={locations}
+            selectedLocation={selectedLocation}
+            onSelect={handleLocationSelect}
+            onEditSettings={setSettingsLocation}
+          />
+        </div>
+      )}
+
+      {step === 'count' && selectedLocation && (
+        <EmployeeCountPrompt
+          initialCount={employees.length || 1}
+          onConfirm={handleEmployeeCountConfirm}
+        />
+      )}
+
+      {step === 'payroll' && selectedLocation && (
+        <div className="space-y-6 pb-24 lg:pb-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-primary" />
+              </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">
-                  Spayroll+
-                </h1>
-                {selectedLocation && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedLocation.name}
-                  </p>
-                )}
+                <h2 className="font-display text-xl text-foreground">Employee payroll</h2>
+                <p className="text-sm text-muted-foreground">
+                  {employees.length} employee{employees.length !== 1 ? 's' : ''}
+                </p>
               </div>
             </div>
-
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={handleRemoveLastEmployee}
+                disabled={employees.length <= 1}
               >
-                {theme === 'dark' ? (
-                  <>
-                    <Sun className="w-4 h-4 mr-2" />
-                    Light
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-4 h-4 mr-2" />
-                    Dark
-                  </>
-                )}
+                <Minus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Remove</span>
               </Button>
-              {step === 'payroll' && selectedLocation && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSettingsLocation(selectedLocation)}
-                    className="hidden sm:flex"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Rates
-                  </Button>
-                  <Button
-                    onClick={() => setShowExportModal(true)}
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save / Export
-                  </Button>
-                </>
-              )}
+              <Button size="sm" onClick={handleAddEmployee} className="bg-primary hover:bg-primary/90">
+                <Plus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Add</span>
+              </Button>
             </div>
+          </div>
+
+          <WeekHeader
+            weekLabel={weekLabel}
+            onWeekLabelChange={(v) => patchDraft({ weekLabel: v })}
+            location={selectedLocation}
+            cashForWeek={cashForWeek}
+            onCashForWeekChange={(v) => patchDraft({ cashForWeek: v })}
+            cashTotal={cashTotal}
+          />
+
+          {selectedLocation.id === 'prominence' ? (
+            <ProminencePayoutPanel
+              employees={employees}
+              metrics={prominenceMetrics}
+              onMetricsChange={(m) => patchDraft({ prominenceMetrics: m })}
+            />
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-4">
+            {employees.map((employee, index) => (
+              <EmployeeCard
+                key={employee.id}
+                employee={employee}
+                location={selectedLocation}
+                index={index}
+                prominenceTipOutPerHour={prominenceTotals?.tipOutPerManHour ?? 0}
+                onUpdate={handleEmployeeUpdate}
+                onDelete={handleEmployeeDelete}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="outline" onClick={handleStartOver} className="sm:w-auto">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Start over
+            </Button>
           </div>
         </div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Step 1: Location Selection */}
-        {step === 'location' && (
-          <div className="animate-fade-in">
-            <LocationSelector
-              locations={locations}
-              selectedLocation={selectedLocation}
-              onSelect={handleLocationSelect}
-              onEditSettings={setSettingsLocation}
-            />
-          </div>
-        )}
-
-        {/* Step 2: Employee Count */}
-        {step === 'count' && selectedLocation && (
-          <div className="animate-fade-in">
-            <EmployeeCountPrompt onConfirm={handleEmployeeCountConfirm} />
-          </div>
-        )}
-
-        {/* Step 3: Payroll Entry */}
-        {step === 'payroll' && selectedLocation && (
-          <div className="animate-fade-in space-y-8">
-            {/* Employee count controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Employee Payroll
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {employees.length} employee{employees.length !== 1 ? 's' : ''} • {weekLabel}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRemoveLastEmployee}
-                  disabled={employees.length <= 1}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted 
-                             hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed
-                             transition-all text-sm font-medium"
-                >
-                  <Minus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Remove</span>
-                </button>
-                <button
-                  onClick={handleAddEmployee}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary 
-                             hover:bg-primary/90 text-primary-foreground transition-all text-sm font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Add Employee</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Week label input */}
-            <div className="max-w-md">
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Week Label
-              </label>
-              <input
-                type="text"
-                value={weekLabel}
-                onChange={(e) => setWeekLabel(e.target.value)}
-                placeholder="e.g., WeekOf_2026-01-14"
-                className="input-premium w-full text-sm"
-              />
-            </div>
-
-            {selectedLocation.id !== 'prominence' ? (
-              <div className="max-w-md">
-                <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Cash for the Week
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={cashForWeek}
-                    onChange={(e) => setCashForWeek(e.target.value)}
-                    placeholder="$Mon, $Tue, $Wed, $Thu, $Fri, $Sat, $Sun"
-                    className="input-premium flex-1 text-sm"
-                  />
-                  {cashForWeek.trim() && (
-                    <div className="text-lg font-semibold text-foreground whitespace-nowrap">
-                      ${cashTotal.toFixed(2)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <ProminencePayoutPanel
-                employees={employees}
-                metrics={prominenceMetrics}
-                onMetricsChange={setProminenceMetrics}
-              />
-            )}
-
-            {/* Employee cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {employees.map((employee, index) => (
-                <EmployeeCard
-                  key={employee.id}
-                  employee={employee}
-                  location={selectedLocation}
-                  index={index}
-                  prominenceTipOutPerHour={prominenceTotals?.tipOutPerManHour ?? 0}
-                  onUpdate={handleEmployeeUpdate}
-                  onDelete={handleEmployeeDelete}
-                />
-              ))}
-            </div>
-
-            {/* Summary */}
-            <PayrollSummary
-              employees={employees}
-              location={selectedLocation}
-              expenses={expenses}
-              onExpensesChange={setExpenses}
-              prominenceTotals={prominenceTotals}
-            />
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={handleStartOver}
-                className="flex-1 sm:flex-none"
-              >
-                Start Over
-              </Button>
-              <Button
-                onClick={() => setShowExportModal(true)}
-                className="flex-1 bg-primary hover:bg-primary/90"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save & Export Payroll
-              </Button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Modals */}
-      {settingsLocation && (
-        <LocationSettingsModal
-          location={settingsLocation}
-          onSave={handleLocationSettingsSave}
-          onClose={() => setSettingsLocation(null)}
-        />
       )}
+    </AppShell>
 
-      {showExportModal && selectedLocation && (
-        <ExportModal
-          data={{
-            location: selectedLocation,
-            employees,
-            expenses,
-            weekLabel,
-            roundedPayment: employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0),
-            locationMetrics: selectedLocation.id === 'prominence' ? prominenceMetrics : undefined,
-          }}
-          onClose={() => setShowExportModal(false)}
-          onImport={handleImport}
-        />
-      )}
-    </div>
+    {step === 'payroll' && selectedLocation && summaryPanel && (
+      <MobileSummaryBar label="Week totals" value={summaryValue}>
+        {summaryPanel}
+      </MobileSummaryBar>
+    )}
+
+    {settingsLocation && (
+      <LocationSettingsModal
+        location={settingsLocation}
+        open={!!settingsLocation}
+        onSave={handleLocationSettingsSave}
+        onClose={() => setSettingsLocation(null)}
+      />
+    )}
+
+    {showExportModal && selectedLocation && (
+      <ExportModal
+        open={showExportModal}
+        data={{
+          location: selectedLocation,
+          employees,
+          expenses,
+          weekLabel,
+          cashForWeek,
+          roundedPayment: actualPayment,
+          locationMetrics:
+            selectedLocation.id === 'prominence' ? prominenceMetrics : undefined,
+        }}
+        onClose={() => setShowExportModal(false)}
+        onImport={handleImport}
+      />
+    )}
+
+    <AlertDialog open={!!confirmStep} onOpenChange={() => setConfirmStep(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Leave payroll step?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You have entered employee data. Going back will keep your entries, but confirm you want to
+            change steps.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Stay</AlertDialogCancel>
+          <AlertDialogAction onClick={() => confirmStep && applyStep(confirmStep)}>
+            Continue
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 };
 

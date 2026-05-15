@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Libre Baskerville"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -71,6 +72,7 @@ export default {
         surface: {
           elevated: "hsl(var(--surface-elevated))",
           overlay: "hsl(var(--surface-overlay))",
+          paper: "hsl(var(--surface-paper))",
         },
         role: {
           runner: "hsl(var(--role-runner))",
@@ -79,16 +81,15 @@ export default {
         },
       },
       borderRadius: {
-        lg: "0",
-        md: "0",
-        sm: "0",
-        xl: "0",
-        "2xl": "0",
-        "3xl": "0",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
       },
       boxShadow: {
-        'glow': '0 0 30px -10px hsl(var(--primary) / 0.3)',
-        'glow-lg': '0 0 50px -15px hsl(var(--primary) / 0.4)',
+        glow: "0 0 30px -10px hsl(var(--primary) / 0.35)",
+        "glow-lg": "0 0 50px -15px hsl(var(--primary) / 0.45)",
       },
       keyframes: {
         "accordion-down": {

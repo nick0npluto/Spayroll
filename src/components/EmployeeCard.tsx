@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ChevronDown } from 'lucide-react';
+import { Trash2, AlertCircle } from 'lucide-react';
 import { Employee, EmployeeRole, LocationProfile, ROLE_DISPLAY_NAMES, OWNER_RATES } from '@/types/payroll';
 import { calculateEmployeePay, formatCurrency } from '@/utils/payrollCalculations';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 // Parse comma-separated time entries (e.g., "5:42, 4:12, 9:34") and return total decimal hours
@@ -52,8 +59,6 @@ export function EmployeeCard({
   onUpdate,
   onDelete,
 }: EmployeeCardProps) {
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  
   // Local state for the raw time input strings
   const [sunFriInput, setSunFriInput] = useState('');
   const [saturdayInput, setSaturdayInput] = useState('');
@@ -101,7 +106,6 @@ export function EmployeeCard({
           : null,
     };
     onUpdate(updatedEmployee);
-    setShowRoleDropdown(false);
   };
 
   // Handle Sun-Fri hours input change
@@ -167,15 +171,22 @@ export function EmployeeCard({
       className="employee-card stagger-fade-in"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Header: Employee number and delete */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Employee #{index + 1}
-        </span>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Employee #{index + 1}
+          </span>
+          <p className="text-lg font-semibold text-primary mt-0.5">
+            {formatCurrency(isProminence ? prominenceTotalPay : payBreakdown.totalPay)}
+            <span className="text-xs font-normal text-muted-foreground ml-1">calculated</span>
+          </p>
+        </div>
         <button
+          type="button"
           onClick={() => onDelete(employee.id)}
-          className="p-2 rounded-lg hover:bg-destructive/10 transition-colors group"
+          className="p-2.5 rounded-lg hover:bg-destructive/10 transition-colors group min-h-[44px] min-w-[44px] flex items-center justify-center"
           title="Remove employee"
+          aria-label="Remove employee"
         >
           <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
         </button>
@@ -195,45 +206,34 @@ export function EmployeeCard({
             placeholder="Employee name"
             className="input-premium w-full text-sm"
           />
+          {!employee.name.trim() && (
+            <p className="flex items-center gap-1 text-xs text-warning mt-1.5">
+              <AlertCircle className="w-3.5 h-3.5" />
+              Name recommended before export
+            </p>
+          )}
         </div>
 
-        {/* Role dropdown */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-muted-foreground mb-2">
-            Role
-          </label>
-          <button
-            onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-            className="input-premium w-full text-left flex items-center justify-between text-sm"
-          >
-            <span className={cn('role-badge', getRoleBadgeClass())}>
-              {ROLE_DISPLAY_NAMES[employee.role]}
-            </span>
-            <ChevronDown className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform",
-              showRoleDropdown && "rotate-180"
-            )} />
-          </button>
-          
-          {showRoleDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border 
-                            rounded-xl shadow-lg z-20 overflow-hidden animate-scale-in">
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">Role</label>
+          <Select value={employee.role} onValueChange={(v) => handleRoleChange(v as EmployeeRole)}>
+            <SelectTrigger className="input-premium h-11">
+              <SelectValue>
+                <span className={cn('role-badge', getRoleBadgeClass())}>
+                  {ROLE_DISPLAY_NAMES[employee.role]}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
               {availableRoles.map((role) => (
-                <button
-                  key={role}
-                  onClick={() => handleRoleChange(role)}
-                  className={cn(
-                    "w-full px-4 py-3 text-left hover:bg-muted transition-colors text-sm",
-                    employee.role === role && "bg-primary/10"
-                  )}
-                >
+                <SelectItem key={role} value={role}>
                   <span className={cn('role-badge', getRoleBadgeClass(role))}>
                     {ROLE_DISPLAY_NAMES[role]}
                   </span>
-                </button>
+                </SelectItem>
               ))}
-            </div>
-          )}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

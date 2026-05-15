@@ -35,7 +35,7 @@ export function PayrollSummary({
           <Calculator className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Payroll Summary</h3>
+          <h3 className="font-display text-lg text-foreground">Week totals</h3>
           <p className="text-sm text-muted-foreground">
             {employees.length} employee{employees.length !== 1 ? 's' : ''} • {location.name}
           </p>

@@ -1,94 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Payroll Calculator Design System - Clean professional white/orange/navy */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Spayroll — Refined hospitality ledger design system */
 
 @layer base {
   :root {
-    /* Core colors - Light professional theme */
-    --background: 220 14% 96%;
-    --foreground: 220 30% 25%;
+    --background: 35 30% 97%;
+    --foreground: 220 30% 22%;
 
-    --card: 0 0% 99%;
-    --card-foreground: 220 30% 25%;
+    --card: 40 25% 99%;
+    --card-foreground: 220 30% 22%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 25%;
+    --popover: 40 25% 100%;
+    --popover-foreground: 220 30% 22%;
 
-    /* Primary - Orange */
     --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Light gray surface */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 30% 25%;
+    --secondary: 35 20% 94%;
+    --secondary-foreground: 220 30% 22%;
 
-    /* Muted - For subtle text and backgrounds */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 15% 50%;
+    --muted: 35 18% 93%;
+    --muted-foreground: 220 15% 48%;
 
-    /* Accent - Orange for hover states */
     --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success - Green for positive values */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning - Amber */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 85%;
-    --input: 0 0% 100%;
+    --border: 35 16% 88%;
+    --input: 40 25% 100%;
     --ring: 25 95% 53%;
 
-    --radius: 0;
+    --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar-background: 220 14% 98%;
-    --sidebar-foreground: 220 30% 25%;
+    --sidebar-background: 40 25% 99%;
+    --sidebar-foreground: 220 30% 22%;
     --sidebar-primary: 25 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 220 30% 25%;
-    --sidebar-border: 220 14% 85%;
+    --sidebar-accent: 35 20% 94%;
+    --sidebar-accent-foreground: 220 30% 22%;
+    --sidebar-border: 35 16% 88%;
     --sidebar-ring: 25 95% 53%;
 
-    /* Custom payroll colors */
-    --surface-elevated: 220 14% 98%;
-    --surface-overlay: 220 14% 96%;
-    --text-primary: 220 30% 25%;
-    --text-secondary: 220 20% 45%;
+    --surface-elevated: 40 30% 99%;
+    --surface-overlay: 35 22% 95%;
+    --surface-paper: 38 35% 98%;
+    --text-primary: 220 30% 22%;
+    --text-secondary: 220 20% 42%;
     --text-tertiary: 220 15% 55%;
-    --divider: 220 14% 85%;
+    --divider: 35 16% 88%;
 
-    /* Role colors */
     --role-runner: 25 95% 53%;
     --role-lot-manager: 220 30% 35%;
     --role-box-manager: 142 70% 40%;
   }
 
   .dark {
-    /* High-contrast dark theme */
-    --background: 222 47% 11%;
+    --background: 222 47% 9%;
     --foreground: 210 40% 96%;
-    --card: 224 36% 14%;
+    --card: 224 36% 13%;
     --card-foreground: 210 40% 96%;
-    --popover: 224 36% 14%;
+    --popover: 224 36% 13%;
     --popover-foreground: 210 40% 96%;
     --primary: 25 95% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 223 30% 18%;
+    --secondary: 223 30% 17%;
     --secondary-foreground: 210 40% 96%;
-    --muted: 223 27% 20%;
-    --muted-foreground: 215 20% 75%;
+    --muted: 223 27% 19%;
+    --muted-foreground: 215 20% 72%;
     --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
     --success: 142 70% 45%;
@@ -97,25 +87,26 @@
     --warning-foreground: 0 0% 10%;
     --destructive: 0 74% 56%;
     --destructive-foreground: 0 0% 100%;
-    --border: 223 22% 28%;
-    --input: 224 30% 18%;
+    --border: 223 22% 26%;
+    --input: 224 30% 16%;
     --ring: 25 95% 53%;
 
-    --sidebar-background: 224 36% 14%;
+    --sidebar-background: 224 36% 13%;
     --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 25 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 30% 18%;
+    --sidebar-accent: 223 30% 17%;
     --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 223 22% 28%;
+    --sidebar-border: 223 22% 26%;
     --sidebar-ring: 25 95% 53%;
 
-    --surface-elevated: 224 36% 14%;
-    --surface-overlay: 223 30% 18%;
+    --surface-elevated: 224 36% 15%;
+    --surface-overlay: 223 30% 17%;
+    --surface-paper: 224 38% 11%;
     --text-primary: 210 40% 96%;
-    --text-secondary: 215 20% 80%;
-    --text-tertiary: 215 16% 66%;
-    --divider: 223 22% 28%;
+    --text-secondary: 215 20% 78%;
+    --text-tertiary: 215 16% 64%;
+    --divider: 223 22% 26%;
 
     --role-runner: 25 95% 58%;
     --role-lot-manager: 210 65% 80%;
@@ -129,15 +120,29 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-image:
+      radial-gradient(ellipse 120% 80% at 50% -20%, hsl(var(--primary) / 0.06), transparent 50%),
+      linear-gradient(180deg, hsl(var(--surface-paper)) 0%, hsl(var(--background)) 100%);
+    background-attachment: fixed;
   }
 
-  /* Custom scrollbar for premium feel */
+  .dark body {
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% -10%, hsl(var(--primary) / 0.08), transparent 45%),
+      linear-gradient(180deg, hsl(var(--surface-paper)) 0%, hsl(var(--background)) 100%);
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-weight: 700;
+  }
+
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -148,55 +153,54 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted));
+    background: hsl(var(--muted-foreground) / 0.35);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
+    background: hsl(var(--muted-foreground) / 0.55);
   }
 }
 
 @layer components {
-  /* Premium input styling */
   .input-premium {
-    @apply bg-input border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground
-           focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200
-           hover:bg-muted/50;
+    @apply min-h-11 rounded-lg bg-input border border-border px-4 py-2.5 text-foreground
+           placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary
+           transition-all duration-200 hover:border-primary/30;
   }
 
-  /* Card with subtle glow on hover */
   .card-premium {
-    @apply bg-card border border-border p-6 transition-all duration-300
-           hover:border-primary/50;
+    @apply rounded-xl bg-card border border-border p-6 shadow-sm transition-all duration-300
+           hover:border-primary/30 hover:shadow-md;
   }
 
-  /* Employee card styling */
   .employee-card {
-    @apply bg-muted border border-border p-5 transition-all duration-200
-           hover:border-primary/30;
+    @apply rounded-xl bg-card border border-border p-5 shadow-sm transition-all duration-200
+           hover:border-primary/25 hover:shadow-md;
   }
 
-  /* Location card with selection state */
   .location-card {
-    @apply bg-card border-2 border-border p-8 cursor-pointer transition-all duration-300
-           hover:border-primary hover:bg-primary/5;
+    @apply relative rounded-xl bg-card border-2 border-border p-6 cursor-pointer transition-all duration-300
+           hover:border-primary/50 hover:shadow-glow;
   }
 
   .location-card-selected {
-    @apply border-primary bg-primary/10;
+    @apply border-primary bg-primary/5 shadow-glow;
   }
 
-  /* Numeric input with better UX */
+  .location-card-selected::before {
+    content: '';
+    @apply absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-primary;
+  }
+
   .numeric-input {
-    @apply bg-input border border-border px-3 py-2 text-center text-foreground
-           focus:ring-2 focus:ring-primary focus:border-transparent transition-all
+    @apply min-h-11 rounded-lg bg-input border border-border px-3 py-2 text-center text-foreground
+           focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all
            [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none;
   }
 
-  /* Role badge styling */
   .role-badge {
-    @apply px-3 py-1 text-xs font-medium border;
+    @apply inline-flex px-3 py-1 text-xs font-medium rounded-md border;
   }
 
   .role-badge-runner {
@@ -212,23 +216,26 @@
   }
 
   .role-badge-owner {
-    @apply bg-amber-500/10 text-amber-600 border-amber-500/30 font-semibold;
+    @apply bg-amber-500/10 text-amber-600 border-amber-500/30 font-semibold dark:text-amber-400;
   }
 
-  /* Summary section */
   .summary-card {
-    @apply bg-primary/5 border-2 border-primary/30 p-6;
+    @apply rounded-xl bg-card border border-primary/20 p-6 shadow-sm;
   }
 
-  /* Smooth fade-in animation */
-  .fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
+  .step-enter {
+    animation: stepEnter 0.45s ease-out forwards;
+  }
+
+  .stagger-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+    opacity: 0;
   }
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -236,30 +243,23 @@
     }
   }
 
-  /* Staggered animation for employee cards */
-  .stagger-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
-    opacity: 0;
-  }
-
-  /* Modal backdrop */
-  .modal-backdrop {
-    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
-  }
-
-  /* Modal content */
-  .modal-content {
-    @apply bg-card border-2 border-border p-6 shadow-2xl max-w-md w-full;
+  @keyframes stepEnter {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 @layer utilities {
-  /* Gradient text for emphasis */
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
   }
 
-  /* Surface colors */
   .bg-surface-elevated {
     background-color: hsl(var(--surface-elevated));
   }
@@ -268,7 +268,10 @@
     background-color: hsl(var(--surface-overlay));
   }
 
-  /* Text hierarchy */
+  .bg-surface-paper {
+    background-color: hsl(var(--surface-paper));
+  }
+
   .text-primary-color {
     color: hsl(var(--text-primary));
   }
@@ -281,8 +284,19 @@
     color: hsl(var(--text-tertiary));
   }
 
-  /* Focus ring utility */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-enter,
+    .stagger-fade-in,
+    .animate-fade-in,
+    .animate-scale-in,
+    .animate-slide-in {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 }

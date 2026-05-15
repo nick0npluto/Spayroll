@@ -1,4 +1,3 @@
-import React from 'react';
 import { MapPin, Settings } from 'lucide-react';
 import { LocationProfile, LocationId } from '@/types/payroll';
 import { cn } from '@/lib/utils';
@@ -14,7 +13,7 @@ const locationIcons: Record<LocationId, string> = {
   'rock-steady': '🎸',
   'the-optimist': '☀️',
   'aria-village': '🏘️',
-  'prominence': '⭐',
+  prominence: '⭐',
 };
 
 export function LocationSelector({
@@ -24,98 +23,86 @@ export function LocationSelector({
   onEditSettings,
 }: LocationSelectorProps) {
   return (
-    <div className="w-full max-w-4xl mx-auto px-4">
+    <div className="w-full max-w-5xl mx-auto step-enter">
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-          <MapPin className="w-8 h-8 text-primary" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-5">
+          <MapPin className="w-7 h-7 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground mb-3">
-          Select Location
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Choose the valet location for this week's payroll
+        <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-3">
+          Select location
+        </h2>
+        <p className="text-muted-foreground text-lg max-w-md mx-auto">
+          Choose the valet site for this week&apos;s payroll
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {locations.map((location, index) => (
-          <div
-            key={location.id}
-            className={cn(
-              'location-card relative group',
-              selectedLocation?.id === location.id && 'location-card-selected'
-            )}
-            style={{ animationDelay: `${index * 100}ms` }}
-            onClick={() => onSelect(location)}
-          >
-            {/* Settings button */}
-            {location.id !== 'prominence' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditSettings(location);
-                }}
-                className="absolute top-4 right-4 p-2 rounded-lg bg-muted/50 opacity-0 group-hover:opacity-100 
-                           transition-all duration-200 hover:bg-muted"
-                title="Edit pay rates"
-              >
-                <Settings className="w-4 h-4 text-muted-foreground" />
-              </button>
-            )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+        {locations.map((location, index) => {
+          const isSelected = selectedLocation?.id === location.id;
+          const isProminence = location.id === 'prominence';
 
-            {/* Location content */}
-            <div className="text-center">
-              <span className="text-4xl mb-4 block">
-                {locationIcons[location.id]}
-              </span>
-              <h3 className="text-xl font-semibold text-foreground mb-3">
-                {location.name}
-              </h3>
-              
-              {/* Pay rates preview */}
-              {location.id === 'prominence' ? (
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Payout Model</span>
-                    <span className="text-foreground font-medium">Rate to be calculated</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Standard Rate</span>
-                    <span className="text-foreground font-medium">
-                      ${location.standardRate}/hr
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Premium Rate</span>
-                    <span className="text-foreground font-medium">
-                      ${location.premiumRate}/hr
-                    </span>
-                  </div>
-                  {location.customSaturdayRunnerRate && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Sat Runner Rate</span>
-                      <span className="text-foreground font-medium">
-                        ${location.customSaturdayRunnerRate}/hr
-                      </span>
-                    </div>
-                  )}
-                </div>
+          return (
+            <article
+              key={location.id}
+              className={cn(
+                'location-card stagger-fade-in',
+                isSelected && 'location-card-selected'
               )}
-            </div>
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              {!isProminence && (
+                <button
+                  type="button"
+                  onClick={() => onEditSettings(location)}
+                  className="absolute top-3 right-3 p-2.5 rounded-lg bg-muted/80 hover:bg-muted border border-border/50 min-h-[44px] min-w-[44px] flex items-center justify-center z-10"
+                  title="Edit pay rates"
+                  aria-label={`Edit rates for ${location.name}`}
+                >
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
 
-            {/* Selection indicator */}
-            {selectedLocation?.id === location.id && (
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            )}
-          </div>
-        ))}
+              <button
+                type="button"
+                className="w-full text-left pt-1"
+                onClick={() => onSelect(location)}
+              >
+                <span className="text-4xl mb-3 block" aria-hidden>
+                  {locationIcons[location.id]}
+                </span>
+                <h3 className="font-display text-xl text-foreground mb-1 pr-10">
+                  {location.name}
+                </h3>
+
+                {isProminence ? (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="text-primary font-medium">Tip-out pool</span>
+                    {' · '}rates calculated from weekly revenue
+                  </p>
+                ) : (
+                  <dl className="space-y-1.5 text-sm mt-3">
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-muted-foreground">Standard</dt>
+                      <dd className="font-semibold text-foreground">${location.standardRate}/hr</dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-muted-foreground">Premium</dt>
+                      <dd className="font-semibold text-foreground">${location.premiumRate}/hr</dd>
+                    </div>
+                    {location.customSaturdayRunnerRate != null && (
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Sat runner</dt>
+                        <dd className="font-semibold text-foreground">
+                          ${location.customSaturdayRunnerRate}/hr
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+              </button>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,34 +1,51 @@
-import React, { useState, useRef } from 'react';
-import { X, FileDown, FileSpreadsheet, FileJson, Upload } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { FileDown, FileSpreadsheet, FileJson, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ExportData, exportToPDF, exportToCSV, exportToJSON, parseImportedJSON, ImportedData } from '@/utils/exportUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  ExportData,
+  exportToPDF,
+  exportToCSV,
+  exportToJSON,
+  parseImportedJSON,
+  ImportedData,
+} from '@/utils/exportUtils';
+import { toast } from 'sonner';
 
 interface ExportModalProps {
+  open: boolean;
   data: ExportData;
   onClose: () => void;
   onImport?: (data: ImportedData) => void;
 }
 
-export function ExportModal({ data, onClose, onImport }: ExportModalProps) {
+export function ExportModal({ open, data, onClose, onImport }: ExportModalProps) {
   const [weekLabel, setWeekLabel] = useState(data.weekLabel);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const exportData = { ...data, weekLabel };
+
   const handleExportPDF = () => {
-    exportToPDF({ ...data, weekLabel });
+    exportToPDF(exportData);
+    toast.success('PDF downloaded');
   };
 
   const handleExportCSV = () => {
-    exportToCSV({ ...data, weekLabel });
+    exportToCSV(exportData);
+    toast.success('CSV downloaded');
   };
 
   const handleExportJSON = () => {
-    exportToJSON({ ...data, weekLabel });
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
+    exportToJSON(exportData);
+    toast.success('JSON saved — use this file to restore later');
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +60,7 @@ export function ExportModal({ data, onClose, onImport }: ExportModalProps) {
       const importedData = parseImportedJSON(text);
 
       if (!importedData) {
-        setImportError('Invalid file format. Please use a JSON file exported from this app.');
+        setImportError('Invalid file. Please use a JSON file exported from Spayroll.');
         setImporting(false);
         return;
       }
@@ -52,164 +69,122 @@ export function ExportModal({ data, onClose, onImport }: ExportModalProps) {
         onImport(importedData);
         onClose();
       }
-    } catch (error) {
+    } catch {
       setImportError('Failed to read file. Please try again.');
     }
 
     setImporting(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <div
-          className="modal-content animate-scale-in max-w-lg"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">
-              Save & Export
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display">Save & export</DialogTitle>
+          <DialogDescription>
+            Download your payroll or import a previous week&apos;s JSON file.
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Week label input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Week Label / Date Range
-            </label>
-            <input
-              type="text"
-              value={weekLabel}
-              onChange={(e) => setWeekLabel(e.target.value)}
-              placeholder="e.g., WeekOf_2026-01-14"
-              className="input-premium w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              This will be included in the filename and report
-            </p>
-          </div>
-
-          {/* Export buttons */}
-          <div className="space-y-3 mb-6">
-            <button
-              onClick={handleExportPDF}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-surface-elevated border border-border
-                         hover:border-primary/30 hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <FileDown className="w-6 h-6 text-destructive" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                  Export as PDF
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Professional report for printing or sharing
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleExportCSV}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-surface-elevated border border-border
-                         hover:border-primary/30 hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                <FileSpreadsheet className="w-6 h-6 text-success" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                  Export as CSV
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Spreadsheet format for Excel or Google Sheets
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleExportJSON}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-surface-elevated border border-border
-                         hover:border-primary/30 hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-                <FileJson className="w-6 h-6 text-warning" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                  Export as JSON
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Data file that can be re-imported later
-                </p>
-              </div>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">
-              Or
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Import section */}
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <button
-              onClick={handleImportClick}
-              disabled={importing}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border border-dashed border-border
-                         hover:border-primary/50 hover:bg-primary/5 transition-all disabled:opacity-50"
-            >
-              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                <Upload className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-medium text-foreground">
-                  {importing ? 'Importing...' : 'Import Previous Week'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Load a previously saved JSON file
-                </p>
-              </div>
-            </button>
-
-            {importError && (
-              <p className="text-sm text-destructive mt-2">{importError}</p>
-            )}
-          </div>
-
-          {/* Cancel button */}
-          <div className="mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-full"
-            >
-              Close
-            </Button>
-          </div>
+        <div className="mb-4">
+          <label htmlFor="export-week-label" className="block text-sm font-medium mb-2">
+            Week label
+          </label>
+          <input
+            id="export-week-label"
+            type="text"
+            value={weekLabel}
+            onChange={(e) => setWeekLabel(e.target.value)}
+            placeholder="WeekOf_2026-01-14"
+            className="input-premium w-full"
+          />
         </div>
+
+        <div className="space-y-2 mb-6">
+          <ExportOption
+            icon={<FileDown className="w-5 h-5 text-destructive" />}
+            iconBg="bg-destructive/10"
+            title="Export as PDF"
+            description="Printable report"
+            onClick={handleExportPDF}
+          />
+          <ExportOption
+            icon={<FileSpreadsheet className="w-5 h-5 text-success" />}
+            iconBg="bg-success/10"
+            title="Export as CSV"
+            description="Spreadsheet format"
+            onClick={handleExportCSV}
+          />
+          <ExportOption
+            icon={<FileJson className="w-5 h-5 text-warning" />}
+            iconBg="bg-warning/10"
+            title="Export as JSON"
+            description="Re-importable backup"
+            onClick={handleExportJSON}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">Or</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="w-full flex items-center gap-4 p-4 rounded-xl border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all disabled:opacity-50 min-h-[44px]"
+        >
+          <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <Upload className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="text-left">
+            <p className="font-medium text-foreground">
+              {importing ? 'Importing…' : 'Import previous week'}
+            </p>
+            <p className="text-sm text-muted-foreground">Load a saved JSON file</p>
+          </div>
+        </button>
+
+        {importError && <p className="text-sm text-destructive mt-2">{importError}</p>}
+
+        <Button variant="outline" onClick={onClose} className="w-full mt-4">
+          Close
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExportOption({
+  icon,
+  iconBg,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left min-h-[44px]"
+    >
+      <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+        {icon}
       </div>
-    </div>
+      <div>
+        <p className="font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </button>
   );
 }

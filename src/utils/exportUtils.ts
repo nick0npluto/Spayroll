@@ -16,6 +16,7 @@ export interface ExportData {
   expenses: number;
   weekLabel: string;
   roundedPayment: number | null;
+  cashForWeek?: string;
   locationMetrics?: ProminenceMetrics;
 }
 
@@ -405,7 +406,7 @@ export function exportToCSV(data: ExportData): void {
 }
 
 export function exportToJSON(data: ExportData): string {
-  const { location, employees, expenses, weekLabel, roundedPayment, locationMetrics } = data;
+  const { location, employees, expenses, weekLabel, roundedPayment, cashForWeek, locationMetrics } = data;
   
   const totalPayroll = employees.reduce((sum, emp) => {
     return sum + calculateEmployeePay(emp, location).totalPay;
@@ -435,6 +436,7 @@ export function exportToJSON(data: ExportData): string {
     })),
     expenses,
     roundedPayment,
+    cashForWeek: cashForWeek ?? '',
     summary: {
       totalPayroll,
       netTotal: totalPayroll + expenses,
@@ -466,6 +468,7 @@ export interface ImportedData {
   employees: Employee[];
   expenses: number;
   weekLabel: string;
+  cashForWeek?: string;
   locationMetrics?: ProminenceMetrics;
 }
 
@@ -501,6 +504,7 @@ export function parseImportedJSON(jsonString: string): ImportedData | null {
       })),
       expenses: data.expenses || 0,
       weekLabel: data.weekLabel || '',
+      cashForWeek: data.cashForWeek ?? '',
       locationMetrics: data.locationMetrics ?? undefined,
     };
   } catch (error) {
