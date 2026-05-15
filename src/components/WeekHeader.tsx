@@ -18,7 +18,7 @@ export function WeekHeader({
   onCashForWeekChange,
   cashTotal,
 }: WeekHeaderProps) {
-  const isProminence = location.id === 'prominence';
+  const isProminence = location.id === 'kain-tracker';
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-4 step-enter">

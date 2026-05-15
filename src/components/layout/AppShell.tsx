@@ -1,6 +1,6 @@
 import { ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StepIndicator } from '@/components/layout/StepIndicator';
+import { StepIndicator, PAYROLL_STEPS } from '@/components/layout/StepIndicator';
 import type { AppStep } from '@/hooks/usePayrollDraft';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ interface AppShellProps {
   headerActions?: React.ReactNode;
   children: React.ReactNode;
   sidebar?: React.ReactNode;
+  steps?: typeof PAYROLL_STEPS;
 }
 
 export function AppShell({
@@ -28,6 +29,7 @@ export function AppShell({
   headerActions,
   children,
   sidebar,
+  steps = PAYROLL_STEPS,
 }: AppShellProps) {
   return (
     <div className="min-h-screen flex flex-col">
@@ -56,7 +58,7 @@ export function AppShell({
             </div>
 
             <div className="hidden sm:flex flex-1 justify-center max-w-md mx-4">
-              <StepIndicator currentStep={step} onStepClick={onStepClick} />
+              <StepIndicator currentStep={step} onStepClick={onStepClick} steps={steps} />
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -70,7 +72,7 @@ export function AppShell({
           </div>
 
           <div className="sm:hidden pb-3">
-            <StepIndicator currentStep={step} onStepClick={onStepClick} />
+            <StepIndicator currentStep={step} onStepClick={onStepClick} steps={steps} />
           </div>
         </div>
       </header>

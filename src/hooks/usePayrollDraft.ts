@@ -3,15 +3,21 @@ import {
   Employee,
   LocationProfile,
   ProminenceMetrics,
+  migrateLocationProfile,
+  isKainTracker,
 } from '@/types/payroll';
+import { KainShift, createEmptyKainShift, createDefaultRecordLabel } from '@/types/kainTracker';
 import { createDefaultProminenceMetrics } from '@/utils/prominenceCalculations';
 
-export type AppStep = 'location' | 'count' | 'payroll';
+export type AppStep = 'location' | 'kain-history' | 'count' | 'payroll';
 
 export interface PayrollDraft {
   step: AppStep;
   selectedLocation: LocationProfile | null;
   employees: Employee[];
+  kainShifts: KainShift[];
+  kainEditingRecordId: string | null;
+  kainRecordLabel: string;
   expenses: number;
   weekLabel: string;
   cashForWeek: string;
@@ -34,6 +40,9 @@ export function createEmptyDraft(): PayrollDraft {
     step: 'location',
     selectedLocation: null,
     employees: [],
+    kainShifts: [],
+    kainEditingRecordId: null,
+    kainRecordLabel: createDefaultRecordLabel(),
     expenses: 0,
     weekLabel: getDefaultWeekLabel(),
     cashForWeek: '',
@@ -48,9 +57,22 @@ function readDraft(): PayrollDraft | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PayrollDraft;
     if (!parsed || typeof parsed !== 'object') return null;
+    const selectedLocation = parsed.selectedLocation
+      ? migrateLocationProfile(parsed.selectedLocation)
+      : null;
+
     return {
       ...createEmptyDraft(),
       ...parsed,
+      selectedLocation,
+      kainShifts: Array.isArray(parsed.kainShifts)
+        ? parsed.kainShifts.map((s, i) => ({
+            ...createEmptyKainShift(s.id || `shift-${i}`),
+            ...s,
+          }))
+        : [],
+      kainEditingRecordId: parsed.kainEditingRecordId ?? null,
+      kainRecordLabel: parsed.kainRecordLabel ?? createDefaultRecordLabel(),
       prominenceMetrics: {
         ...createDefaultProminenceMetrics(),
         ...parsed.prominenceMetrics,
@@ -83,13 +105,21 @@ export function usePayrollDraft({ debounceMs = 300 }: UsePayrollDraftOptions = {
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const hasMeaningfulProgress = useCallback((d: PayrollDraft) => {
+    if (!d.selectedLocation || d.step === 'location') return false;
+    if (isKainTracker(d.selectedLocation)) {
+      return d.step === 'count' || d.step === 'payroll' || d.kainShifts.length > 0;
+    }
+    return true;
+  }, []);
+
   useEffect(() => {
     const stored = readDraft();
-    if (stored && stored.step !== 'location' && stored.selectedLocation) {
+    if (stored && hasMeaningfulProgress(stored)) {
       setPendingResume(stored);
     }
     setHasCheckedStorage(true);
-  }, []);
+  }, [hasMeaningfulProgress]);
 
   const persistDraft = useCallback((next: PayrollDraft) => {
     if (saveTimerRef.current) {
@@ -113,7 +143,16 @@ export function usePayrollDraft({ debounceMs = 300 }: UsePayrollDraftOptions = {
       setDraft((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
         if (next.step !== 'location' && next.selectedLocation) {
-          persistDraft(next);
+          if (
+            isKainTracker(next.selectedLocation) &&
+            next.step === 'kain-history' &&
+            !next.kainEditingRecordId &&
+            next.kainShifts.length === 0
+          ) {
+            clearPayrollDraft();
+          } else if (!isKainTracker(next.selectedLocation) || next.step !== 'kain-history') {
+            persistDraft(next);
+          }
         }
         return next;
       });

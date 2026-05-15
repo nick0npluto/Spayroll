@@ -1,4 +1,4 @@
-export type LocationId = 'rock-steady' | 'the-optimist' | 'aria-village' | 'prominence';
+export type LocationId = 'rock-steady' | 'the-optimist' | 'aria-village' | 'kain-tracker';
 
 export interface LocationProfile {
   id: LocationId;
@@ -94,8 +94,8 @@ export const DEFAULT_LOCATIONS: LocationProfile[] = [
     customSaturdayRunnerRate: null,
   },
   {
-    id: 'prominence',
-    name: 'Prominence',
+    id: 'kain-tracker',
+    name: "Kain's Cash Tracker",
     standardRate: 12,
     premiumRate: 15,
     customSaturdayRunnerRate: null,
@@ -114,3 +114,19 @@ export const OWNER_RATES = {
   sunFriRate: 25,
   saturdayRate: 30,
 } as const;
+
+/** Maps legacy prominence id from saved data to Kain's Cash Tracker */
+export function migrateLocationProfile(loc: LocationProfile): LocationProfile {
+  if ((loc.id as string) === 'prominence') {
+    return {
+      ...loc,
+      id: 'kain-tracker',
+      name: "Kain's Cash Tracker",
+    };
+  }
+  return loc;
+}
+
+export function isKainTracker(location: LocationProfile | null | undefined): boolean {
+  return location?.id === 'kain-tracker';
+}

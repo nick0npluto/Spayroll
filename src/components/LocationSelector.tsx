@@ -13,7 +13,7 @@ const locationIcons: Record<LocationId, string> = {
   'rock-steady': '🎸',
   'the-optimist': '☀️',
   'aria-village': '🏘️',
-  prominence: '⭐',
+  'kain-tracker': '💰',
 };
 
 export function LocationSelector({
@@ -39,7 +39,7 @@ export function LocationSelector({
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         {locations.map((location, index) => {
           const isSelected = selectedLocation?.id === location.id;
-          const isProminence = location.id === 'prominence';
+          const isKainTracker = location.id === 'kain-tracker';
 
           return (
             <article
@@ -50,7 +50,7 @@ export function LocationSelector({
               )}
               style={{ animationDelay: `${index * 80}ms` }}
             >
-              {!isProminence && (
+              {!isKainTracker && (
                 <button
                   type="button"
                   onClick={() => onEditSettings(location)}
@@ -74,10 +74,10 @@ export function LocationSelector({
                   {location.name}
                 </h3>
 
-                {isProminence ? (
+                {isKainTracker ? (
                   <p className="text-sm text-muted-foreground">
-                    <span className="text-primary font-medium">Tip-out pool</span>
-                    {' · '}rates calculated from weekly revenue
+                    <span className="text-primary font-medium">Personal earnings</span>
+                    {' · '}track shifts, cash, and online tips
                   </p>
                 ) : (
                   <dl className="space-y-1.5 text-sm mt-3">
