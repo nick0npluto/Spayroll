@@ -169,6 +169,40 @@
            transition-all duration-200 hover:border-primary/30;
   }
 
+  /* Compact date field — iOS Safari renders type=date much larger by default */
+  .input-date {
+    @apply rounded-lg bg-input border border-border text-foreground text-sm
+           focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all duration-200
+           hover:border-primary/30;
+    width: 10.5rem;
+    max-width: 100%;
+    min-height: 2.75rem;
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    line-height: 1.25;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .input-date::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
+  .input-date::-webkit-datetime-edit {
+    padding: 0;
+    margin: 0;
+  }
+
+  .input-date::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+
+  .input-date::-webkit-calendar-picker-indicator {
+    margin-left: 0.25rem;
+    padding: 0;
+    opacity: 0.65;
+  }
+
   .card-premium {
     @apply rounded-xl bg-card border border-border p-6 shadow-sm transition-all duration-300
            hover:border-primary/30 hover:shadow-md;

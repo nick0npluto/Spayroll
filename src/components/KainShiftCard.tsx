@@ -58,7 +58,7 @@ export function KainShiftCard({ shift, index, onUpdate, onDelete }: KainShiftCar
             required
             value={shift.workDate}
             onChange={(e) => onUpdate({ ...shift, workDate: e.target.value })}
-            className="input-premium w-full max-w-xs text-sm"
+            className="input-date"
           />
         </div>
 
