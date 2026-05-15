@@ -61,50 +61,41 @@ export function KainHistoryPanel({
           Earnings history
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Saved on this device automatically. Use backup only when moving phones or clearing browser
-          data.
+          Saved on this device. Export a PDF anytime from a record or below.
         </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        {records.length > 0 && (
-          <Button variant="outline" className="flex-1" onClick={onExportAllPdf}>
-            <FileText className="w-4 h-4 mr-2" />
-            Export all PDF
-          </Button>
-        )}
-        <Button variant="outline" className="flex-1" onClick={onExportBackup}>
-          <Download className="w-4 h-4 mr-2" />
-          JSON backup
-        </Button>
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Import backup
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onImportBackup(file);
-            e.target.value = '';
-          }}
-        />
       </div>
 
       <Button
         onClick={onNewRecord}
-        className="w-full mb-6 bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg rounded-xl"
+        className="w-full mb-4 bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg rounded-xl"
       >
         <Plus className="w-5 h-5 mr-2" />
         Log new earnings
       </Button>
+
+      {records.length > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mb-6"
+          onClick={onExportAllPdf}
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Export all as PDF
+        </Button>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onImportBackup(file);
+          e.target.value = '';
+        }}
+      />
 
       {records.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-10 text-center">
@@ -167,10 +158,11 @@ export function KainHistoryPanel({
                   <button
                     type="button"
                     onClick={() => setDeleteId(record.id)}
-                    className="px-4 border-l border-border hover:bg-destructive/10 transition-colors flex items-center justify-center min-w-[52px]"
+                    className="px-3 sm:px-4 border-l border-border hover:bg-destructive/10 transition-colors flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[72px]"
                     aria-label={`Delete ${record.label}`}
                   >
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                    <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive" />
+                    <span className="text-[10px] font-medium text-muted-foreground">Delete</span>
                   </button>
                 </div>
               </li>
@@ -179,10 +171,33 @@ export function KainHistoryPanel({
         </ul>
       )}
 
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <span className="sr-only">Optional device backup</span>
+        <button
+          type="button"
+          onClick={onExportBackup}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <Download className="w-3 h-3" aria-hidden />
+          Download JSON
+        </button>
+        <span aria-hidden className="text-border">
+          ·
+        </span>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <Upload className="w-3 h-3" aria-hidden />
+          Import JSON
+        </button>
+      </div>
+
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this log?</AlertDialogTitle>
             <AlertDialogDescription>
               {recordToDelete
                 ? `"${recordToDelete.label}" will be removed permanently from this device.`
@@ -198,7 +213,7 @@ export function KainHistoryPanel({
                 setDeleteId(null);
               }}
             >
-              Delete
+              Delete log
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

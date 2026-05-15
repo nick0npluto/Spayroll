@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Plus, Minus, Download, Settings, Users, RotateCcw, Save, FileText } from 'lucide-react';
+import { Plus, Minus, Download, Settings, Users, RotateCcw, Save, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   LocationProfile,
@@ -111,6 +111,7 @@ const Index = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [confirmStep, setConfirmStep] = useState<AppStep | null>(null);
   const [pendingImport, setPendingImport] = useState<KainEarningsRecord[] | null>(null);
+  const [confirmDeleteRecordId, setConfirmDeleteRecordId] = useState<string | null>(null);
 
   const step = draft.step;
   const selectedLocation = draft.selectedLocation;
@@ -123,6 +124,9 @@ const Index = () => {
   const cashForWeek = draft.cashForWeek;
 
   const kainMode = isKainTracker(selectedLocation);
+  const recordPendingDelete = confirmDeleteRecordId
+    ? kainHistory.getRecord(confirmDeleteRecordId)
+    : null;
 
   useEffect(() => {
     setLocations((prev) => {
@@ -637,6 +641,11 @@ const Index = () => {
               label={kainRecordLabel}
               onLabelChange={(v) => patchDraft({ kainRecordLabel: v })}
               isEditing={!!kainEditingRecordId}
+              onDelete={
+                kainEditingRecordId
+                  ? () => setConfirmDeleteRecordId(kainEditingRecordId)
+                  : undefined
+              }
             />
           )}
 
@@ -688,6 +697,16 @@ const Index = () => {
                 >
                   Back to history
                 </Button>
+                {kainEditingRecordId && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfirmDeleteRecordId(kainEditingRecordId)}
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete log
+                  </Button>
+                )}
                 <Button
                   onClick={handleSaveKainRecord}
                   className="sm:flex-1 bg-primary hover:bg-primary/90"
@@ -741,6 +760,33 @@ const Index = () => {
         onImport={handleImport}
       />
     )}
+
+    <AlertDialog open={!!confirmDeleteRecordId} onOpenChange={() => setConfirmDeleteRecordId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this log?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {recordPendingDelete
+              ? `"${recordPendingDelete.label}" and all of its shifts will be removed permanently.`
+              : 'This log will be removed permanently.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => {
+              if (confirmDeleteRecordId) {
+                handleDeleteKainRecord(confirmDeleteRecordId);
+                setConfirmDeleteRecordId(null);
+              }
+            }}
+          >
+            Delete log
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <AlertDialog open={!!pendingImport} onOpenChange={() => setPendingImport(null)}>
       <AlertDialogContent>
