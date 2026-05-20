@@ -102,7 +102,9 @@ export function AriaEmployeeCard({
       <div className="flex items-center justify-between py-3 px-3 rounded-lg bg-muted/30 border border-border/50 mb-4">
         <div>
           <p className="text-sm font-medium text-foreground">Custom hourly rate</p>
-          <p className="text-xs text-muted-foreground">When revenue figures need a manual rate</p>
+          <p className="text-xs text-muted-foreground">
+            Paid first from gross cash — deducted before the tip pool is calculated
+          </p>
         </div>
         <Switch
           checked={!!employee.useCustomHourly}

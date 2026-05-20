@@ -59,34 +59,49 @@ export function PayrollSummary({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3">
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Pool hours</p>
-              <p className="text-lg font-semibold text-foreground">
-                {ariaTotals.totalManHours.toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Tip out / hr</p>
-              <p className="text-lg font-semibold text-primary">
-                {ariaTotals.totalManHours > 0
-                  ? formatCurrency(ariaTotals.tipOutPerManHour)
-                  : '$0.00'}
-              </p>
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3 text-sm">
             <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Total cash</p>
+              <p className="text-xs text-muted-foreground mb-1">Gross total cash</p>
               <p className="font-semibold text-foreground">
-                {formatCurrency(ariaTotals.totalCash)}
+                {formatCurrency(ariaTotals.grossTotalCash)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Cash after voids</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.cashAfterVoids)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Manual payroll</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.manualPayTotal)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Pool cash</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.poolCash)}
               </p>
             </div>
             <div className="rounded-lg bg-muted/40 p-3">
               <p className="text-xs text-muted-foreground mb-1">CC deposit</p>
               <p className="font-semibold text-foreground">
                 {formatCurrency(ariaTotals.ccDeposit)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Tip out / hr</p>
+              <p className="font-semibold text-primary">
+                {ariaTotals.totalManHours > 0
+                  ? formatCurrency(ariaTotals.tipOutPerManHour)
+                  : '$0.00'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Pool hours</p>
+              <p className="font-semibold text-foreground">
+                {ariaTotals.totalManHours.toFixed(2)}
               </p>
             </div>
             <div className="rounded-lg bg-muted/40 p-3 col-span-2">
@@ -97,9 +112,11 @@ export function PayrollSummary({
             </div>
           </div>
 
-          {ariaTotals.isOverAllocated && (
+          {(ariaTotals.isManualPayOverGross || ariaTotals.isPoolOverAllocated) && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Estimated pay exceeds the tip-out pool — review hours or custom rates.
+              {ariaTotals.isManualPayOverGross
+                ? 'Manual payroll exceeds cash after voids.'
+                : 'Pool pay exceeds total tip out — review hours.'}
             </p>
           )}
 

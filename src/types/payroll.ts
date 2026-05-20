@@ -72,12 +72,10 @@ export interface ProminenceMetrics {
 
 /** Aria Village tip-pool inputs (Dunwoody sheet) */
 export interface AriaMetrics {
-  /** Row 27 — cash counter for the week (tracking only) */
+  /** Row 27 — cash counter for the week */
   dailyCashByDay: Record<DayKey, number>;
-  /** H30 — amount available to split among staff */
-  totalCash: number;
-  /** D30 — weekly gross total */
-  weeklyTotal: number;
+  /** Cash the manager adds on top of the counter (e.g. $417) */
+  managerCashGiven: number;
   voids: number;
   ccDeposit: number;
 }

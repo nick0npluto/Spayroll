@@ -1,10 +1,11 @@
+import { ReactNode } from 'react';
 import { AriaMetrics, Employee } from '@/types/payroll';
 import {
   ARIA_DAY_ORDER,
   calculateAriaVillageTotals,
 } from '@/utils/ariaVillageCalculations';
 import { formatCurrency } from '@/utils/payrollCalculations';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Minus } from 'lucide-react';
 
 interface AriaVillagePayoutPanelProps {
   employees: Employee[];
@@ -35,15 +36,16 @@ export function AriaVillagePayoutPanel({
   const totals = calculateAriaVillageTotals(metrics, employees);
 
   return (
-    <section className="rounded-xl border border-amber-500/20 bg-card p-5 space-y-6 step-enter shadow-sm">
+    <section className="rounded-xl border border-amber-500/20 bg-card p-5 space-y-5 step-enter shadow-sm">
       <div>
         <h3 className="font-display text-lg text-foreground">Aria Village payout</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Enter cash metrics and employee hours. Total cash is what you split — not the daily counter sum.
+          Build gross cash from the counter and manager, remove voids, pay manual hourly first, then
+          split the remainder plus CC across pool staff.
         </p>
       </div>
 
-      <div>
+      <WaterfallSection title="1. Build gross total cash">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Cash counter for the week
         </p>
@@ -71,72 +73,112 @@ export function AriaVillagePayoutPanel({
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Counter sum: {formatCurrency(totals.cashCounterSum)} — for your records only
+        <LedgerRow label="Counter sum" value={formatCurrency(totals.cashCounterSum)} />
+        <MetricInput
+          label="Manager cash given"
+          hint="Extra cash the manager contributes (e.g. $417)"
+          value={metrics.managerCashGiven}
+          onChange={(v) => onMetricsChange({ ...metrics, managerCashGiven: v })}
+        />
+        <LedgerRow
+          label="Gross total cash"
+          value={formatCurrency(totals.grossTotalCash)}
+          highlight
+        />
+      </WaterfallSection>
+
+      <WaterfallSection title="2. Voids (before tip-out)">
+        <MetricInput
+          label="Voids"
+          value={metrics.voids}
+          onChange={(v) => onMetricsChange({ ...metrics, voids: v })}
+        />
+        <LedgerRow label="Cash after voids" value={formatCurrency(totals.cashAfterVoids)} highlight />
+      </WaterfallSection>
+
+      <WaterfallSection title="3. Manual hourly (paid first)">
+        <p className="text-xs text-muted-foreground">
+          {totals.manualEmployeeCount === 0
+            ? 'No manual-hourly employees yet — enable “Custom hourly rate” on employee cards below.'
+            : `${totals.manualEmployeeCount} employee${totals.manualEmployeeCount !== 1 ? 's' : ''} on manual hourly`}
         </p>
-      </div>
+        <LedgerRow label="Manual payroll" value={formatCurrency(totals.manualPayTotal)} />
+        <div className="flex items-center gap-2 text-muted-foreground py-1">
+          <Minus className="w-4 h-4 shrink-0" />
+          <span className="text-xs">Deducted from cash after voids</span>
+        </div>
+        <LedgerRow label="Pool cash" value={formatCurrency(totals.poolCash)} highlight />
+        {totals.isManualPayOverGross && (
+          <ErrorBanner>
+            Manual payroll ({formatCurrency(totals.manualPayTotal)}) exceeds cash after voids (
+            {formatCurrency(totals.cashAfterVoids)}). Lower hours, rates, or adjust cash inputs.
+          </ErrorBanner>
+        )}
+      </WaterfallSection>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/20">
-          <h4 className="text-sm font-semibold text-foreground">Weekly totals</h4>
-          <MetricInput
-            label="Weekly total"
-            hint="Gross total for the week"
-            value={metrics.weeklyTotal}
-            onChange={(v) => onMetricsChange({ ...metrics, weeklyTotal: v })}
-          />
-          <MetricInput
-            label="Voids"
-            value={metrics.voids}
-            onChange={(v) => onMetricsChange({ ...metrics, voids: v })}
-          />
-          <div className="flex justify-between text-sm pt-1 border-t border-border">
-            <span className="text-muted-foreground">Total after voids</span>
-            <span className="font-semibold text-foreground">
-              {formatCurrency(totals.totalAfterVoids)}
-            </span>
+      <WaterfallSection title="4. Tip-out pool">
+        <MetricInput
+          label="CC deposit"
+          value={metrics.ccDeposit}
+          onChange={(v) => onMetricsChange({ ...metrics, ccDeposit: v })}
+        />
+        <LedgerRow label="Total tip out" value={formatCurrency(totals.totalTipOut)} highlight />
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground mb-1">Tip out / man-hour</p>
+            <p className="text-lg font-semibold text-primary">
+              {totals.totalManHours > 0
+                ? formatCurrency(totals.tipOutPerManHour)
+                : '$0.00'}
+            </p>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground mb-1">Pool hours</p>
+            <p className="text-lg font-semibold text-foreground">
+              {totals.totalManHours.toFixed(2)}
+            </p>
           </div>
         </div>
-
-        <div className="rounded-xl border border-primary/20 p-4 space-y-3 bg-primary/5">
-          <h4 className="text-sm font-semibold text-foreground">Tip-out pool</h4>
-          <MetricInput
-            label="Total cash"
-            hint="Amount to split (after manager take)"
-            value={metrics.totalCash}
-            onChange={(v) => onMetricsChange({ ...metrics, totalCash: v })}
-          />
-          <MetricInput
-            label="CC deposit"
-            value={metrics.ccDeposit}
-            onChange={(v) => onMetricsChange({ ...metrics, ccDeposit: v })}
-          />
-          <div className="text-sm space-y-1.5 pt-2 border-t border-primary/10">
-            <SummaryRow label="Total tip out" value={formatCurrency(totals.totalTipOut)} bold />
-            <SummaryRow
-              label="Tip out / man-hour"
-              value={
-                totals.totalManHours > 0
-                  ? formatCurrency(totals.tipOutPerManHour)
-                  : '$0.00'
-              }
-            />
-            <SummaryRow label="Pool hours" value={totals.totalManHours.toFixed(2)} />
-            <SummaryRow label="Bank withdrawal" value={formatCurrency(totals.bankWithdrawal)} />
-          </div>
-        </div>
-      </div>
-
-      {totals.isOverAllocated && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-foreground">
-            Estimated pay ({formatCurrency(totals.totalEstimatedPay)}) exceeds the tip-out pool (
-            {formatCurrency(totals.totalTipOut)}). Check hours or custom hourly rates.
-          </p>
-        </div>
-      )}
+        {totals.isPoolOverAllocated && !totals.isManualPayOverGross && (
+          <ErrorBanner>
+            Pool estimated pay ({formatCurrency(totals.poolEstimatedPay)}) exceeds total tip out (
+            {formatCurrency(totals.totalTipOut)}). Check pool employee hours.
+          </ErrorBanner>
+        )}
+      </WaterfallSection>
     </section>
+  );
+}
+
+function WaterfallSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/80 p-4 space-y-3 bg-muted/10">
+      <h4 className="text-sm font-semibold text-foreground">{title}</h4>
+      {children}
+    </div>
+  );
+}
+
+function LedgerRow({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`flex justify-between items-center text-sm py-1.5 px-2 rounded-lg ${
+        highlight ? 'bg-primary/10 font-semibold' : ''
+      }`}
+    >
+      <span className={highlight ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+      <span className={highlight ? 'text-primary text-base' : 'text-foreground font-medium'}>
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -168,19 +210,11 @@ function MetricInput({
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-}) {
+function ErrorBanner({ children }: { children: ReactNode }) {
   return (
-    <p className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={bold ? 'font-bold text-primary' : 'font-semibold'}>{value}</span>
-    </p>
+    <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+      <p className="text-foreground">{children}</p>
+    </div>
   );
 }

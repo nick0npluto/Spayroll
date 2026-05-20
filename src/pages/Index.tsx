@@ -62,6 +62,7 @@ import {
   calculateAriaVillageTotals,
   createDefaultAriaMetrics,
   createEmptyHoursByDay,
+  partitionAriaEmployees,
 } from '@/utils/ariaVillageCalculations';
 import { exportAriaPayrollToPDF } from '@/utils/ariaVillagePdf';
 import {
@@ -523,6 +524,11 @@ const Index = () => {
     [ariaMode, ariaMetrics, employees]
   );
 
+  const ariaEmployeeGroups = useMemo(
+    () => (ariaMode ? partitionAriaEmployees(employees) : { manual: [], pool: [] }),
+    [ariaMode, employees]
+  );
+
   const actualPayment = employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0);
   const summaryValue = kainTotals
     ? formatCurrency(kainTotals.totalEarnings)
@@ -744,17 +750,51 @@ const Index = () => {
               ))}
             </div>
           ) : ariaMode && ariaTotals ? (
-            <div className="grid grid-cols-1 gap-4">
-              {employees.map((employee, index) => (
-                <AriaEmployeeCard
-                  key={employee.id}
-                  employee={employee}
-                  index={index}
-                  tipOutPerManHour={ariaTotals.tipOutPerManHour}
-                  onUpdate={handleEmployeeUpdate}
-                  onDelete={handleEmployeeDelete}
-                />
-              ))}
+            <div className="space-y-8">
+              {ariaEmployeeGroups.manual.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-display text-base text-foreground">Manual hourly</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Paid first — deducted from cash after voids before the tip pool.
+                    </p>
+                  </div>
+                  {ariaEmployeeGroups.manual.map((employee, index) => (
+                    <AriaEmployeeCard
+                      key={employee.id}
+                      employee={employee}
+                      index={index}
+                      tipOutPerManHour={ariaTotals.tipOutPerManHour}
+                      onUpdate={handleEmployeeUpdate}
+                      onDelete={handleEmployeeDelete}
+                    />
+                  ))}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-display text-base text-foreground">Tip pool</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Paid from pool cash + CC at {formatCurrency(ariaTotals.tipOutPerManHour)}/hr.
+                  </p>
+                </div>
+                {ariaEmployeeGroups.pool.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    No pool employees — all staff are on manual hourly or add more employees.
+                  </p>
+                ) : (
+                  ariaEmployeeGroups.pool.map((employee, index) => (
+                    <AriaEmployeeCard
+                      key={employee.id}
+                      employee={employee}
+                      index={ariaEmployeeGroups.manual.length + index}
+                      tipOutPerManHour={ariaTotals.tipOutPerManHour}
+                      onUpdate={handleEmployeeUpdate}
+                      onDelete={handleEmployeeDelete}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">

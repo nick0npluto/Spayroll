@@ -9,7 +9,7 @@ import {
 } from '@/types/payroll';
 import { KainShift, createEmptyKainShift, createDefaultRecordLabel } from '@/types/kainTracker';
 import { createDefaultProminenceMetrics } from '@/utils/prominenceCalculations';
-import { createDefaultAriaMetrics } from '@/utils/ariaVillageCalculations';
+import { createDefaultAriaMetrics, migrateAriaMetrics } from '@/utils/ariaVillageCalculations';
 
 export type AppStep = 'location' | 'kain-history' | 'count' | 'payroll';
 
@@ -85,14 +85,7 @@ function readDraft(): PayrollDraft | null {
           ...parsed.prominenceMetrics?.dailyCashByDay,
         },
       },
-      ariaMetrics: {
-        ...createDefaultAriaMetrics(),
-        ...parsed.ariaMetrics,
-        dailyCashByDay: {
-          ...createDefaultAriaMetrics().dailyCashByDay,
-          ...parsed.ariaMetrics?.dailyCashByDay,
-        },
-      },
+      ariaMetrics: migrateAriaMetrics(parsed.ariaMetrics),
     };
   } catch {
     return null;
