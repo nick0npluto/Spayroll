@@ -6,6 +6,7 @@ import {
   Employee,
   DEFAULT_LOCATIONS,
   isKainTracker,
+  isAriaVillage,
   migrateLocationProfile,
 } from '@/types/payroll';
 import {
@@ -36,6 +37,8 @@ import { LocationSettingsModal } from '@/components/LocationSettingsModal';
 import { EmployeeCountPrompt } from '@/components/EmployeeCountPrompt';
 import { ShiftCountPrompt } from '@/components/ShiftCountPrompt';
 import { EmployeeCard } from '@/components/EmployeeCard';
+import { AriaEmployeeCard } from '@/components/AriaEmployeeCard';
+import { AriaVillagePayoutPanel } from '@/components/AriaVillagePayoutPanel';
 import { KainShiftCard } from '@/components/KainShiftCard';
 import { PayrollSummary } from '@/components/PayrollSummary';
 import { KainShiftSummary } from '@/components/KainShiftSummary';
@@ -56,12 +59,18 @@ import {
 import { useTheme } from 'next-themes';
 import { formatCurrency } from '@/utils/payrollCalculations';
 import {
+  calculateAriaVillageTotals,
+  createDefaultAriaMetrics,
+  createEmptyHoursByDay,
+} from '@/utils/ariaVillageCalculations';
+import { exportAriaPayrollToPDF } from '@/utils/ariaVillagePdf';
+import {
   downloadKainHistoryBackup,
   parseKainHistoryBackup,
 } from '@/utils/kainHistoryBackup';
 
 function createEmployee(location: LocationProfile): Employee {
-  return {
+  const base: Employee = {
     id: generateUniqueId(),
     name: '',
     role: 'runner',
@@ -74,6 +83,15 @@ function createEmployee(location: LocationProfile): Employee {
     managerSaturdayRate: null,
     actualPaid: null,
   };
+  if (isAriaVillage(location)) {
+    return {
+      ...base,
+      hoursByDay: createEmptyHoursByDay(),
+      useCustomHourly: false,
+      customHourlyRate: null,
+    };
+  }
+  return base;
 }
 
 function calculateCashTotal(input: string): number {
@@ -122,8 +140,10 @@ const Index = () => {
   const expenses = draft.expenses;
   const weekLabel = draft.weekLabel;
   const cashForWeek = draft.cashForWeek;
+  const ariaMetrics = draft.ariaMetrics;
 
   const kainMode = isKainTracker(selectedLocation);
+  const ariaMode = isAriaVillage(selectedLocation);
   const recordPendingDelete = confirmDeleteRecordId
     ? kainHistory.getRecord(confirmDeleteRecordId)
     : null;
@@ -155,6 +175,7 @@ const Index = () => {
       kainShifts: [],
       kainEditingRecordId: null,
       kainRecordLabel: createDefaultRecordLabel(),
+      ...(isAriaVillage(location) ? { ariaMetrics: createDefaultAriaMetrics() } : {}),
     });
     if (isKain) kainHistory.refresh();
   };
@@ -238,6 +259,18 @@ const Index = () => {
     setPendingImport(null);
   };
 
+  const handleExportAriaPdf = () => {
+    if (!selectedLocation || !ariaMode) return;
+    exportAriaPayrollToPDF({
+      location: selectedLocation,
+      employees,
+      weekLabel,
+      ariaMetrics,
+      actualPayment,
+    });
+    toast.success('PDF downloaded');
+  };
+
   const handleExportCurrentKainPdf = () => {
     const validationError = validateKainShiftsForSave(kainShifts);
     if (validationError) {
@@ -293,9 +326,18 @@ const Index = () => {
       return;
     }
 
-    const newEmployees: Employee[] = Array.from({ length: count }, (_, i) =>
-      employees[i] ? { ...employees[i] } : createEmployee(selectedLocation)
-    );
+    const newEmployees: Employee[] = Array.from({ length: count }, (_, i) => {
+      if (employees[i]) {
+        const emp = { ...employees[i] };
+        if (isAriaVillage(selectedLocation) && !emp.hoursByDay) {
+          emp.hoursByDay = createEmptyHoursByDay();
+          emp.useCustomHourly = emp.useCustomHourly ?? false;
+          emp.customHourlyRate = emp.customHourlyRate ?? null;
+        }
+        return emp;
+      }
+      return createEmployee(selectedLocation);
+    });
     patchDraft({ employees: newEmployees, step: 'payroll' });
   };
 
@@ -476,6 +518,11 @@ const Index = () => {
     [kainMode, kainShifts]
   );
 
+  const ariaTotals = useMemo(
+    () => (ariaMode ? calculateAriaVillageTotals(ariaMetrics, employees) : null),
+    [ariaMode, ariaMetrics, employees]
+  );
+
   const actualPayment = employees.reduce((sum, emp) => sum + (emp.actualPaid ?? 0), 0);
   const summaryValue = kainTotals
     ? formatCurrency(kainTotals.totalEarnings)
@@ -492,6 +539,7 @@ const Index = () => {
           expenses={expenses}
           onExpensesChange={(v) => patchDraft({ expenses: v })}
           prominenceTotals={null}
+          ariaTotals={ariaTotals}
         />
       )
     ) : null;
@@ -509,6 +557,21 @@ const Index = () => {
             <span className="hidden sm:inline">
               {kainEditingRecordId ? 'Update' : 'Save'}
             </span>
+          </Button>
+        </>
+      ) : ariaMode ? (
+        <>
+          <Button variant="outline" size="sm" onClick={handleExportAriaPdf}>
+            <FileText className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">PDF</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setShowExportModal(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
         </>
       ) : (
@@ -660,6 +723,14 @@ const Index = () => {
             />
           )}
 
+          {ariaMode && (
+            <AriaVillagePayoutPanel
+              employees={employees}
+              metrics={ariaMetrics}
+              onMetricsChange={(m) => patchDraft({ ariaMetrics: m })}
+            />
+          )}
+
           {kainMode ? (
             <div className="grid grid-cols-1 gap-4">
               {kainShifts.map((shift, index) => (
@@ -669,6 +740,19 @@ const Index = () => {
                   index={index}
                   onUpdate={handleKainShiftUpdate}
                   onDelete={handleKainShiftDelete}
+                />
+              ))}
+            </div>
+          ) : ariaMode && ariaTotals ? (
+            <div className="grid grid-cols-1 gap-4">
+              {employees.map((employee, index) => (
+                <AriaEmployeeCard
+                  key={employee.id}
+                  employee={employee}
+                  index={index}
+                  tipOutPerManHour={ariaTotals.tipOutPerManHour}
+                  onUpdate={handleEmployeeUpdate}
+                  onDelete={handleEmployeeDelete}
                 />
               ))}
             </div>
@@ -755,6 +839,8 @@ const Index = () => {
           cashForWeek,
           roundedPayment: actualPayment,
           locationMetrics: undefined,
+          ariaMetrics: ariaMode ? ariaMetrics : undefined,
+          actualPayment: ariaMode ? actualPayment : undefined,
         }}
         onClose={() => setShowExportModal(false)}
         onImport={handleImport}

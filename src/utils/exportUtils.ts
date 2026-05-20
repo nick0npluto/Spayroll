@@ -4,6 +4,7 @@ import {
   Employee,
   LocationProfile,
   ProminenceMetrics,
+  AriaMetrics,
   ROLE_DISPLAY_NAMES,
   OWNER_RATES,
 } from '@/types/payroll';
@@ -18,6 +19,8 @@ export interface ExportData {
   roundedPayment: number | null;
   cashForWeek?: string;
   locationMetrics?: ProminenceMetrics;
+  ariaMetrics?: AriaMetrics;
+  actualPayment?: number;
 }
 
 function sanitizeFilename(name: string): string {

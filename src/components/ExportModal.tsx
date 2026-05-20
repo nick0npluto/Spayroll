@@ -16,6 +16,9 @@ import {
   parseImportedJSON,
   ImportedData,
 } from '@/utils/exportUtils';
+import { isAriaVillage } from '@/types/payroll';
+import { exportAriaPayrollToPDF } from '@/utils/ariaVillagePdf';
+import { createDefaultAriaMetrics } from '@/utils/ariaVillageCalculations';
 import { toast } from 'sonner';
 
 interface ExportModalProps {
@@ -34,7 +37,17 @@ export function ExportModal({ open, data, onClose, onImport }: ExportModalProps)
   const exportData = { ...data, weekLabel };
 
   const handleExportPDF = () => {
-    exportToPDF(exportData);
+    if (isAriaVillage(exportData.location)) {
+      exportAriaPayrollToPDF({
+        location: exportData.location,
+        employees: exportData.employees,
+        weekLabel: exportData.weekLabel,
+        ariaMetrics: exportData.ariaMetrics ?? createDefaultAriaMetrics(),
+        actualPayment: exportData.actualPayment ?? exportData.roundedPayment ?? 0,
+      });
+    } else {
+      exportToPDF(exportData);
+    }
     toast.success('PDF downloaded');
   };
 

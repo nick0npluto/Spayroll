@@ -1,5 +1,5 @@
 import { MapPin, Settings } from 'lucide-react';
-import { LocationProfile, LocationId } from '@/types/payroll';
+import { LocationProfile, LocationId, isAriaVillage } from '@/types/payroll';
 import { cn } from '@/lib/utils';
 
 interface LocationSelectorProps {
@@ -40,6 +40,7 @@ export function LocationSelector({
         {locations.map((location, index) => {
           const isSelected = selectedLocation?.id === location.id;
           const isKainTracker = location.id === 'kain-tracker';
+          const isAria = isAriaVillage(location);
 
           return (
             <article
@@ -50,7 +51,7 @@ export function LocationSelector({
               )}
               style={{ animationDelay: `${index * 80}ms` }}
             >
-              {!isKainTracker && (
+              {!isKainTracker && !isAria && (
                 <button
                   type="button"
                   onClick={() => onEditSettings(location)}
@@ -78,6 +79,11 @@ export function LocationSelector({
                   <p className="text-sm text-muted-foreground">
                     <span className="text-primary font-medium">Personal earnings</span>
                     {' · '}track shifts, cash, and online tips
+                  </p>
+                ) : isAria ? (
+                  <p className="text-sm text-muted-foreground mt-3">
+                    <span className="text-primary font-medium">Tip-pool payroll</span>
+                    {' · '}daily hours, cash counter, and custom hourly overrides
                   </p>
                 ) : (
                   <dl className="space-y-1.5 text-sm mt-3">

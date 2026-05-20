@@ -1,5 +1,5 @@
 import { CalendarDays, Banknote } from 'lucide-react';
-import { LocationProfile } from '@/types/payroll';
+import { LocationProfile, isAriaVillage } from '@/types/payroll';
 
 interface WeekHeaderProps {
   weekLabel: string;
@@ -18,7 +18,7 @@ export function WeekHeader({
   onCashForWeekChange,
   cashTotal,
 }: WeekHeaderProps) {
-  const isProminence = location.id === 'kain-tracker';
+  const hideCashForWeek = location.id === 'kain-tracker' || isAriaVillage(location);
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-4 step-enter">
@@ -37,7 +37,7 @@ export function WeekHeader({
         />
       </div>
 
-      {!isProminence && (
+      {!hideCashForWeek && (
         <div>
           <label htmlFor="cash-week" className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
             <Banknote className="w-4 h-4 text-primary" />

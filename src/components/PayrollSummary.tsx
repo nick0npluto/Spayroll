@@ -3,6 +3,8 @@ import { DollarSign, MinusCircle, Calculator, Banknote } from 'lucide-react';
 import { Employee, LocationProfile } from '@/types/payroll';
 import { calculateTotalPayroll, formatCurrency } from '@/utils/payrollCalculations';
 import { ProminenceTotals } from '@/utils/prominenceCalculations';
+import { AriaVillageTotals } from '@/utils/ariaVillageCalculations';
+import { isAriaVillage } from '@/types/payroll';
 
 interface PayrollSummaryProps {
   employees: Employee[];
@@ -10,6 +12,7 @@ interface PayrollSummaryProps {
   expenses: number;
   onExpensesChange: (value: number) => void;
   prominenceTotals?: ProminenceTotals | null;
+  ariaTotals?: AriaVillageTotals | null;
 }
 
 export function PayrollSummary({
@@ -18,10 +21,12 @@ export function PayrollSummary({
   expenses,
   onExpensesChange,
   prominenceTotals,
+  ariaTotals,
 }: PayrollSummaryProps) {
   const totalPayroll = calculateTotalPayroll(employees, location);
   const netTotal = totalPayroll + expenses;
   const isProminence = location.id === 'prominence' && prominenceTotals;
+  const isAria = isAriaVillage(location) && ariaTotals;
   
   // Calculate actual payment from individual employee actuals
   const actualPayment = employees.reduce((sum, emp) => {
@@ -42,7 +47,86 @@ export function PayrollSummary({
         </div>
       </div>
 
-      {isProminence ? (
+      {isAria ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5 text-muted-foreground" />
+              <span className="text-foreground font-medium">Total tip out</span>
+            </div>
+            <span className="text-xl font-bold text-foreground">
+              {formatCurrency(ariaTotals.totalTipOut)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Pool hours</p>
+              <p className="text-lg font-semibold text-foreground">
+                {ariaTotals.totalManHours.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Tip out / hr</p>
+              <p className="text-lg font-semibold text-primary">
+                {ariaTotals.totalManHours > 0
+                  ? formatCurrency(ariaTotals.tipOutPerManHour)
+                  : '$0.00'}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-b border-primary/10 pb-3 text-sm">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Total cash</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.totalCash)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">CC deposit</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.ccDeposit)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3 col-span-2">
+              <p className="text-xs text-muted-foreground mb-1">Estimated pay (all staff)</p>
+              <p className="font-semibold text-foreground">
+                {formatCurrency(ariaTotals.totalEstimatedPay)}
+              </p>
+            </div>
+          </div>
+
+          {ariaTotals.isOverAllocated && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Estimated pay exceeds the tip-out pool — review hours or custom rates.
+            </p>
+          )}
+
+          <div className="flex items-center justify-between py-3 bg-primary/5 px-3 -mx-3">
+            <div className="flex items-center gap-3">
+              <Banknote className="w-5 h-5 text-primary" />
+              <span className="text-foreground font-medium">Actual paid</span>
+            </div>
+            <span className="text-2xl font-bold text-primary">
+              {formatCurrency(actualPayment)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-1">
+            <span className="text-sm text-muted-foreground">Variance (Actual − Estimated)</span>
+            <span
+              className={`text-sm font-semibold ${
+                actualPayment - ariaTotals.totalEstimatedPay >= 0
+                  ? 'text-primary'
+                  : 'text-destructive'
+              }`}
+            >
+              {formatCurrency(actualPayment - ariaTotals.totalEstimatedPay)}
+            </span>
+          </div>
+        </div>
+      ) : isProminence ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b border-primary/10">
             <div className="flex items-center gap-3">

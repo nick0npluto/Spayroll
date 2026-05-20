@@ -12,6 +12,15 @@ export type EmployeeRole = 'runner' | 'lot-manager' | 'box-manager' | 'owner';
 
 export type BasePayType = 'standard' | 'premium';
 
+export type DayKey =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
 export interface Employee {
   id: string;
   name: string;
@@ -36,6 +45,11 @@ export interface Employee {
    */
   managerSaturdayRate?: number | null;
   actualPaid: number | null;
+  /** Aria Village: hours worked per weekday */
+  hoursByDay?: Record<DayKey, number>;
+  /** Aria Village: pay at manual rate instead of tip-pool rate */
+  useCustomHourly?: boolean;
+  customHourlyRate?: number | null;
 }
 
 export interface PayrollData {
@@ -46,15 +60,6 @@ export interface PayrollData {
   roundedPayment: number | null;
 }
 
-export type DayKey =
-  | 'monday'
-  | 'tuesday'
-  | 'wednesday'
-  | 'thursday'
-  | 'friday'
-  | 'saturday'
-  | 'sunday';
-
 export interface ProminenceMetrics {
   dailyCashByDay: Record<DayKey, number>;
   voids: number;
@@ -63,6 +68,18 @@ export interface ProminenceMetrics {
   lotFeePercent: number;
   lotFeeOverride: number | null;
   bankWithdrawalOverride: number | null;
+}
+
+/** Aria Village tip-pool inputs (Dunwoody sheet) */
+export interface AriaMetrics {
+  /** Row 27 — cash counter for the week (tracking only) */
+  dailyCashByDay: Record<DayKey, number>;
+  /** H30 — amount available to split among staff */
+  totalCash: number;
+  /** D30 — weekly gross total */
+  weeklyTotal: number;
+  voids: number;
+  ccDeposit: number;
 }
 
 export interface EmployeePayBreakdown {
@@ -129,4 +146,8 @@ export function migrateLocationProfile(loc: LocationProfile): LocationProfile {
 
 export function isKainTracker(location: LocationProfile | null | undefined): boolean {
   return location?.id === 'kain-tracker';
+}
+
+export function isAriaVillage(location: LocationProfile | null | undefined): boolean {
+  return location?.id === 'aria-village';
 }

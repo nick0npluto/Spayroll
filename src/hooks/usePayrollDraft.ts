@@ -3,11 +3,13 @@ import {
   Employee,
   LocationProfile,
   ProminenceMetrics,
+  AriaMetrics,
   migrateLocationProfile,
   isKainTracker,
 } from '@/types/payroll';
 import { KainShift, createEmptyKainShift, createDefaultRecordLabel } from '@/types/kainTracker';
 import { createDefaultProminenceMetrics } from '@/utils/prominenceCalculations';
+import { createDefaultAriaMetrics } from '@/utils/ariaVillageCalculations';
 
 export type AppStep = 'location' | 'kain-history' | 'count' | 'payroll';
 
@@ -22,6 +24,7 @@ export interface PayrollDraft {
   weekLabel: string;
   cashForWeek: string;
   prominenceMetrics: ProminenceMetrics;
+  ariaMetrics: AriaMetrics;
   savedAt: string;
 }
 
@@ -47,6 +50,7 @@ export function createEmptyDraft(): PayrollDraft {
     weekLabel: getDefaultWeekLabel(),
     cashForWeek: '',
     prominenceMetrics: createDefaultProminenceMetrics(),
+    ariaMetrics: createDefaultAriaMetrics(),
     savedAt: new Date().toISOString(),
   };
 }
@@ -79,6 +83,14 @@ function readDraft(): PayrollDraft | null {
         dailyCashByDay: {
           ...createDefaultProminenceMetrics().dailyCashByDay,
           ...parsed.prominenceMetrics?.dailyCashByDay,
+        },
+      },
+      ariaMetrics: {
+        ...createDefaultAriaMetrics(),
+        ...parsed.ariaMetrics,
+        dailyCashByDay: {
+          ...createDefaultAriaMetrics().dailyCashByDay,
+          ...parsed.ariaMetrics?.dailyCashByDay,
         },
       },
     };
